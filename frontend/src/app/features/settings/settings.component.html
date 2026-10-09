@@ -1,0 +1,125 @@
+<div class="settings-view animate-fade-in">
+  <header class="settings-header">
+    <h1 class="page-title">Ajustes y Preferencias</h1>
+    <p class="page-subtitle">Configura el almacenamiento de música, calidad de audio y normalización</p>
+  </header>
+
+  <main class="settings-content">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>Cargando configuración...</span>
+      </div>
+    } @else {
+      <div class="settings-card glass-card">
+        <!-- Download Directory -->
+        <div class="setting-section">
+          <div class="section-info">
+            <h3>Carpeta de Almacenamiento de Música</h3>
+            <p>Directorio en tu disco duro donde se guardarán y organizarán tus archivos de audio descargados.</p>
+          </div>
+
+          <div class="directory-input-box">
+            <input 
+              type="text" 
+              [(ngModel)]="downloadDir" 
+              class="input-text" 
+              placeholder="C:/Users/.../Music/meloSync"
+            />
+            <button
+              tuiButton
+              type="button"
+              appearance="flat"
+              size="s"
+              (click)="openFolder()"
+            >
+              📁 Abrir en Explorador
+            </button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Audio Quality -->
+        <div class="setting-section">
+          <div class="section-info">
+            <h3>Calidad de Audio Predeterminada</h3>
+            <p>Selecciona la tasa de bits (bitrate) preferida para las descargas de YouTube.</p>
+          </div>
+
+          <div class="quality-grid">
+            @for (q of qualityOptions; track q.value) {
+              <label class="quality-option glass-card" [class.selected]="selectedQuality === q.value">
+                <input 
+                  type="radio" 
+                  name="quality" 
+                  [value]="q.value" 
+                  [(ngModel)]="selectedQuality" 
+                />
+                <div class="option-meta">
+                  <span class="option-title">{{ q.label }}</span>
+                  <span class="option-desc">{{ q.desc }}</span>
+                </div>
+              </label>
+            }
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Audio Normalization -->
+        <div class="setting-section">
+          <div class="section-info">
+            <h3>Normalización de Volumen (FFmpeg Loudnorm)</h3>
+            <p>Estandariza el volumen de todas las pistas para evitar cambios bruscos al escuchar música (Estándar Apple Music / Spotify: -14 LUFS).</p>
+          </div>
+
+          <div class="normalization-box">
+            <div class="slider-row">
+              <input 
+                type="range" 
+                min="-24" 
+                max="-9" 
+                step="0.5" 
+                [(ngModel)]="normalizeLufs" 
+                class="lufs-slider" 
+              />
+              <span class="lufs-value">{{ normalizeLufs }} LUFS</span>
+            </div>
+            <span class="lufs-hint">Recomendado: -14.0 LUFS para una dinámica balanceada.</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Auto Tagging -->
+        <div class="setting-section">
+          <div class="section-info">
+            <h3>Enriquecimiento Automático de Metadatos</h3>
+            <p>Consulta automáticamente a Apple iTunes Search API para descargar e incrustar carátulas de 1000x1000 y etiquetas oficiales.</p>
+          </div>
+
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="autoTag" class="checkbox-input" />
+            <span>Habilitar búsqueda automática en iTunes</span>
+          </label>
+        </div>
+
+        <!-- Actions -->
+        <div class="card-footer">
+          <button
+            tuiButton
+            type="button"
+            appearance="primary"
+            size="m"
+            class="save-btn"
+            (click)="saveSettings()"
+            [disabled]="isSaving()"
+          >
+            {{ isSaving() ? 'Guardando...' : '💾 Guardar Preferencias' }}
+          </button>
+        </div>
+      </div>
+    }
+  </main>
+</div>

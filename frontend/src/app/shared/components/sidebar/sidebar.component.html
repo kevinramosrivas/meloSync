@@ -1,0 +1,64 @@
+<aside class="sidebar glass-panel">
+  <!-- App Brand / Logo -->
+  <div class="brand">
+    <div class="brand-icon">
+      <app-icon name="music" [size]="20" />
+    </div>
+    <div class="brand-text">
+      <span class="brand-title">meloSync</span>
+      <span class="brand-subtitle">Music Manager</span>
+    </div>
+  </div>
+
+  <!-- Navigation Links -->
+  <nav class="nav-menu">
+    <div class="nav-section-title">Explorar</div>
+
+    <a routerLink="/search" routerLinkActive="active" class="nav-item">
+      <app-icon name="search" [size]="18" class="nav-icon" />
+      <span class="nav-label">Buscar</span>
+    </a>
+
+    <a routerLink="/downloads" routerLinkActive="active" class="nav-item">
+      <app-icon name="download" [size]="18" class="nav-icon" />
+      <span class="nav-label">Descargas</span>
+      @if (activeProgress()) {
+        <span tuiBadge size="s" appearance="primary" class="pulse">1</span>
+      }
+    </a>
+
+    <a routerLink="/library" routerLinkActive="active" class="nav-item">
+      <app-icon name="library" [size]="18" class="nav-icon" />
+      <span class="nav-label">Biblioteca</span>
+    </a>
+
+    <div class="nav-section-title mt-6">Configuración</div>
+
+    <a routerLink="/settings" routerLinkActive="active" class="nav-item">
+      <app-icon name="settings" [size]="18" class="nav-icon" />
+      <span class="nav-label">Ajustes</span>
+    </a>
+  </nav>
+
+  <!-- Sidebar Footer (Status & Quick Action) -->
+  <div class="sidebar-footer">
+    <button
+      tuiButton
+      type="button"
+      appearance="flat"
+      size="s"
+      class="quick-folder-btn"
+      (click)="openMusicFolder()"
+    >
+      <app-icon name="folder" [size]="15" />
+      <span>Abrir Carpeta</span>
+    </button>
+
+    <div class="connection-status">
+      <span class="status-dot" [class.connected]="ws.isConnected()"></span>
+      <span class="status-text">
+        {{ ws.isConnected() ? 'Servidor Conectado' : 'Conectando...' }}
+      </span>
+    </div>
+  </div>
+</aside>

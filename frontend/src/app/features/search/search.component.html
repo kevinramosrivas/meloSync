@@ -1,0 +1,104 @@
+<div class="search-view animate-fade-in">
+  <!-- Search Bar Header -->
+  <header class="search-header">
+    <h1 class="page-title">Descubrir y Descargar</h1>
+    <p class="page-subtitle">Busca canciones, artistas o pega enlaces directos de YouTube</p>
+
+    <div class="search-input-box glass-panel">
+      <app-icon name="search" [size]="16" class="search-icon" />
+      <input 
+        type="text" 
+        [(ngModel)]="searchQuery" 
+        (keyup.enter)="onSearch()"
+        placeholder="Escribe el nombre de la canción o pega una URL de YouTube..."
+        class="search-input"
+        autofocus
+      />
+      @if (searchQuery) {
+        <button class="clear-btn" (click)="searchQuery = ''">&times;</button>
+      }
+      <button
+        tuiButton
+        type="button"
+        appearance="primary"
+        size="m"
+        (click)="onSearch()"
+        [disabled]="isLoading() || !searchQuery.trim()"
+      >
+        <app-icon name="search" [size]="15" />
+        <span>{{ isLoading() ? 'Buscando...' : 'Buscar' }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Search Content -->
+  <main class="search-content">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>Consultando YouTube...</span>
+      </div>
+    } @else if (results().length > 0) {
+      <div class="results-grid">
+        @for (item of results(); track item.youtube_id) {
+          <div class="result-card glass-card">
+            <div class="thumbnail-wrapper">
+              <img [src]="item.thumbnail_url" [alt]="item.title" class="thumbnail" loading="lazy" />
+              <span class="duration-badge">{{ item.duration_formatted }}</span>
+            </div>
+
+            <div class="card-info">
+              <h3 class="card-title" [title]="item.title">{{ item.title }}</h3>
+              <p class="card-channel" [title]="item.channel_name">{{ item.channel_name }}</p>
+            </div>
+
+            <div class="card-actions">
+              <button 
+                tuiButton
+                type="button"
+                appearance="primary"
+                size="s"
+                class="download-btn" 
+                [disabled]="isDownloading(item.youtube_id)"
+                (click)="download(item)">
+                @if (isDownloading(item.youtube_id)) {
+                  <div class="spinner-sm"></div>
+                  <span>Encolando...</span>
+                } @else {
+                  <app-icon name="download" [size]="14" />
+                  <span>Descargar</span>
+                }
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    } @else if (hasSearched()) {
+      <div class="empty-state">
+        <div class="empty-icon-wrap">
+          <app-icon name="search" [size]="48" />
+        </div>
+        <h3>No se encontraron resultados</h3>
+        <p>Intenta con otros términos o verifica el enlace ingresado.</p>
+      </div>
+    } @else {
+      <div class="hero-suggestions">
+        <h4 class="suggestions-title">Búsquedas Populares</h4>
+        <div class="tags-row">
+          @for (tag of popularTags; track tag) {
+            <button
+              tuiButton
+              type="button"
+              appearance="flat"
+              size="s"
+              class="tag-btn"
+              (click)="searchTag(tag)"
+            >
+              {{ tag }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </main>
+</div>

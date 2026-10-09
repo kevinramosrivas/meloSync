@@ -1,0 +1,9 @@
+<div class="progress-container" [style.height.px]="height()">
+  <progress
+    tuiProgressBar
+    [value]="percent()"
+    [max]="100"
+    class="progress-bar-element"
+    [class.is-indeterminate]="indeterminate()"
+  ></progress>
+</div>

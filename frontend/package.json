@@ -1,0 +1,53 @@
+{
+  "name": "frontend",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "tauri": "tauri",
+    "dev:desktop": "tauri dev",
+    "build:backend": "python ../backend/build_sidecar.py",
+    "build:desktop": "npm run build:backend && tauri build"
+  },
+  "private": true,
+  "packageManager": "npm@11.13.0",
+  "dependencies": {
+    "@angular/animations": "^22.2.2",
+    "@angular/common": "^22.1.0",
+    "@angular/compiler": "^22.1.0",
+    "@angular/core": "^22.1.0",
+    "@angular/forms": "^22.1.0",
+    "@angular/platform-browser": "^22.1.0",
+    "@angular/router": "^22.1.0",
+    "@ng-web-apis/common": "^5.4.0",
+    "@ng-web-apis/platform": "^5.4.0",
+    "@taiga-ui/cdk": "^5.27.0",
+    "@taiga-ui/core": "^5.27.0",
+    "@taiga-ui/event-plugins": "^5.1.0",
+    "@taiga-ui/icons": "^5.27.0",
+    "@taiga-ui/kit": "^5.27.0",
+    "@taiga-ui/layout": "^5.27.0",
+    "@taiga-ui/polymorpheus": "^5.0.1",
+    "@taiga-ui/styles": "^5.27.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "autoprefixer": "^10.6.1",
+    "postcss": "^8.5.29",
+    "rxjs": "~7.8.0",
+    "tailwindcss": "^4.3.3",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^22.1.2",
+    "@angular/cli": "^22.1.2",
+    "@angular/compiler-cli": "^22.1.0",
+    "@tauri-apps/cli": "^2.12.1",
+    "jsdom": "^28.0.0",
+    "less": "^4.9.1",
+    "prettier": "^3.8.1",
+    "typescript": "~6.0.2",
+    "vitest": "^4.0.8"
+  }
+}

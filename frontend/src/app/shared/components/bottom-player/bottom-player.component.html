@@ -1,0 +1,117 @@
+<footer class="player-container glass-panel">
+  <!-- Left: Track Metadata & Cover -->
+  <div class="player-left">
+    @if (player.currentTrack(); as track) {
+      <div class="cover-wrapper">
+        @if (player.coverUrl()) {
+          <img [src]="player.coverUrl()" alt="Cover" class="track-cover" />
+        } @else {
+          <div class="track-cover-placeholder">
+            <app-icon name="music" [size]="22" />
+          </div>
+        }
+      </div>
+      <div class="track-info">
+        <span class="track-title" [title]="track.display_title">{{ track.display_title }}</span>
+        <span class="track-artist" [title]="track.display_artist">{{ track.display_artist }}</span>
+      </div>
+    } @else {
+      <div class="player-idle">
+        <span class="idle-icon">
+          <app-icon name="music" [size]="18" />
+        </span>
+        <span class="idle-text">Selecciona una pista para reproducir</span>
+      </div>
+    }
+  </div>
+
+  <!-- Center: Playback Controls & Timeline -->
+  <div class="player-center">
+    <!-- Control buttons -->
+    <div class="playback-controls">
+      <button
+        type="button"
+        (click)="player.playPrevious()"
+        title="Pista anterior"
+        [disabled]="!player.currentTrack()"
+        class="player-btn"
+      >
+        <app-icon name="skip-back" [size]="18" />
+      </button>
+
+      <button
+        type="button"
+        class="player-main-btn"
+        (click)="player.togglePlay()"
+        title="Reproducir / Pausar"
+        [disabled]="!player.currentTrack()"
+      >
+        <app-icon [name]="player.isPlaying() ? 'pause' : 'play'" [size]="20" />
+      </button>
+
+      <button
+        type="button"
+        (click)="player.playNext()"
+        title="Pista siguiente"
+        [disabled]="!player.currentTrack()"
+        class="player-btn"
+      >
+        <app-icon name="skip-forward" [size]="18" />
+      </button>
+    </div>
+
+    <!-- Timeline / Seek bar -->
+    <div class="timeline-wrapper">
+      <span class="time-label">{{ player.currentTime() | duration }}</span>
+
+      <div class="seek-track" (click)="onSeekClick($event)">
+        <div class="seek-fill" [style.width.%]="player.progressPercent()"></div>
+      </div>
+
+      <span class="time-label">{{ player.duration() | duration }}</span>
+    </div>
+  </div>
+
+  <!-- Right: Actions & Volume -->
+  <div class="player-right">
+    @if (player.currentTrack(); as track) {
+      <button
+        type="button"
+        class="player-action-btn"
+        (click)="openInSystemPlayer(track.id)"
+        title="Abrir en reproductor del sistema"
+      >
+        <app-icon name="external-link" [size]="16" />
+      </button>
+      <button
+        type="button"
+        class="player-action-btn"
+        (click)="openFolder(track.id)"
+        title="Revelar en explorador"
+      >
+        <app-icon name="folder" [size]="16" />
+      </button>
+    }
+
+    <!-- Volume Control -->
+    <div class="volume-wrapper">
+      <button
+        type="button"
+        class="player-action-btn"
+        (click)="player.toggleMute()"
+        title="Silenciar / Activar sonido"
+      >
+        <app-icon [name]="player.isMuted() || player.volume() === 0 ? 'volume-x' : 'volume-2'" [size]="18" />
+      </button>
+      <input 
+        type="range" 
+        min="0" 
+        max="1" 
+        step="0.01" 
+        [value]="player.volume()" 
+        (input)="onVolumeChange($event)"
+        class="volume-slider" 
+      />
+    </div>
+  </div>
+</footer>

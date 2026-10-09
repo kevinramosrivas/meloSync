@@ -1,0 +1,130 @@
+<div class="library-view animate-fade-in">
+  <!-- Header -->
+  <header class="library-header">
+    <div>
+      <h1 class="page-title">Tu Biblioteca</h1>
+      <p class="page-subtitle">{{ filteredTracks().length }} canciones descargadas en alta calidad</p>
+    </div>
+
+    <div class="header-actions">
+      <div class="search-box glass-panel">
+        <app-icon name="search" [size]="15" class="search-icon" />
+        <input 
+          type="text" 
+          [(ngModel)]="filterQuery" 
+          placeholder="Filtrar por título, artista o álbum..." 
+          class="filter-input"
+        />
+        @if (filterQuery) {
+          <button class="clear-btn" (click)="filterQuery = ''">&times;</button>
+        }
+      </div>
+
+      <button
+        tuiButton
+        type="button"
+        appearance="flat"
+        size="s"
+        (click)="loadLibrary()"
+      >
+        <app-icon name="refresh" [size]="14" />
+        <span>Actualizar</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <main class="library-content">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>Cargando biblioteca...</span>
+      </div>
+    } @else if (filteredTracks().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon-wrap">
+          <app-icon name="music" [size]="48" />
+        </div>
+        <h3>No hay canciones en tu biblioteca</h3>
+        <p>Descarga tus canciones preferidas desde la pestaña de Búsqueda.</p>
+      </div>
+    } @else {
+      <!-- Track Cards Grid -->
+      <div class="tracks-grid">
+        @for (track of filteredTracks(); track track.id) {
+          <div 
+            class="track-card glass-card"
+            [class.is-playing]="player.currentTrack()?.id === track.id && player.isPlaying()"
+            (dblclick)="play(track)">
+
+            <!-- Cover Image Box -->
+            <div class="cover-box">
+              @if (getCoverUrl(track)) {
+                <img [src]="getCoverUrl(track)" [alt]="track.display_title" class="cover-img" loading="lazy" />
+              } @else {
+                <div class="cover-placeholder">
+                  <app-icon name="music" [size]="36" />
+                </div>
+              }
+
+              <!-- Hover Play Overlay -->
+              <div class="cover-overlay" (click)="play(track)">
+                <button class="play-circle-btn" type="button">
+                  <app-icon [name]="player.currentTrack()?.id === track.id && player.isPlaying() ? 'pause' : 'play'" [size]="20" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Info -->
+            <div class="track-details">
+              <h3 class="track-title" [title]="track.display_title">{{ track.display_title }}</h3>
+              <p class="track-artist" [title]="track.display_artist">{{ track.display_artist }}</p>
+              <p class="track-album" [title]="track.display_album">{{ track.display_album }}</p>
+            </div>
+
+            <!-- Footer / Actions -->
+            <div class="track-card-footer">
+              <span class="track-duration">{{ track.duration_seconds | duration }}</span>
+
+              <div class="card-buttons">
+                <button
+                  type="button"
+                  class="card-action-btn edit-btn"
+                  (click)="openMetadataDialog(track); $event.stopPropagation()"
+                  title="Editar metadatos / carátula"
+                >
+                  <app-icon name="pencil" [size]="13" />
+                </button>
+                <button
+                  type="button"
+                  class="card-action-btn folder-btn"
+                  (click)="openFolder(track.id); $event.stopPropagation()"
+                  title="Revelar en explorador"
+                >
+                  <app-icon name="folder" [size]="13" />
+                </button>
+                <button
+                  type="button"
+                  class="card-action-btn delete-btn"
+                  (click)="deleteTrack(track); $event.stopPropagation()"
+                  title="Eliminar pista"
+                >
+                  <app-icon name="trash" [size]="13" />
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </main>
+
+  <!-- Metadata Edit Modal -->
+  @if (selectedTrackForEdit()) {
+    <app-metadata-dialog 
+      [track]="selectedTrackForEdit()!" 
+      (close)="selectedTrackForEdit.set(null)"
+      (updated)="onTrackMetadataUpdated($event)"
+    />
+  }
+</div>
