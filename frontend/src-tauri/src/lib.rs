@@ -1,6 +1,12 @@
-use std::process::{Child, Command};
+use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use tauri::Manager;
+
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 struct BackendProcess(Mutex<Option<Child>>);
 
@@ -11,7 +17,7 @@ pub fn run() {
         .setup(|app| {
             let mut backend_child: Option<Child> = None;
 
-            // En producción, buscar e iniciar el sidecar compilado del backend
+            // En producción, buscar e iniciar el sidecar compilado del backend silenciosamente
             if let Ok(current_exe) = std::env::current_exe() {
                 if let Some(exe_dir) = current_exe.parent() {
                     let candidates = [
@@ -22,7 +28,13 @@ pub fn run() {
 
                     for cand in &candidates {
                         if cand.exists() {
-                            if let Ok(child) = Command::new(cand).spawn() {
+                            let mut cmd = Command::new(cand);
+                            #[cfg(windows)]
+                            cmd.creation_flags(CREATE_NO_WINDOW);
+                            cmd.stdout(Stdio::null());
+                            cmd.stderr(Stdio::null());
+
+                            if let Ok(child) = cmd.spawn() {
                                 backend_child = Some(child);
                                 break;
                             }

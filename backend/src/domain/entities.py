@@ -19,10 +19,17 @@ def utc_now() -> datetime:
 
 def get_default_music_dir() -> str:
     """Returns the default music directory path for the current OS."""
-    candidates = [
-        Path.home() / "Music" / "meloSync",
-        Path.home() / "Música" / "meloSync",
-        Path.home() / "meloSync_Music",
+    home = Path.home()
+    existing_candidates: list[Path] = []
+    if (home / "Música").is_dir():
+        existing_candidates.append(home / "Música" / "meloSync")
+    if (home / "Music").is_dir():
+        existing_candidates.append(home / "Music" / "meloSync")
+
+    candidates = existing_candidates + [
+        home / "Música" / "meloSync",
+        home / "Music" / "meloSync",
+        home / "meloSync_Music",
     ]
     for candidate in candidates:
         try:
@@ -30,7 +37,7 @@ def get_default_music_dir() -> str:
             return str(candidate)
         except Exception:
             continue
-    fallback = Path.home() / "meloSync_Music"
+    fallback = home / "meloSync_Music"
     fallback.mkdir(parents=True, exist_ok=True)
     return str(fallback)
 

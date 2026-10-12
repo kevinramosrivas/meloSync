@@ -23,6 +23,7 @@ def build_sidecar():
         "PyInstaller",
         "--noconfirm",
         "--onefile",
+        "--noconsole",
         "--clean",
         "--name",
         f"melosync-backend-{target_triple}",

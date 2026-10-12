@@ -17,6 +17,7 @@ from ..application.use_cases import (
     GetTrackByIdUseCase,
     SearchMetadataCandidatesUseCase,
     SearchYouTubeUseCase,
+    SyncLibraryUseCase,
     UpdateSettingsUseCase,
     UpdateTrackMetadataUseCase,
 )
@@ -92,6 +93,9 @@ class Container:
 
     def get_update_settings_use_case(self) -> UpdateSettingsUseCase:
         return UpdateSettingsUseCase(uow_factory=self.uow_factory)
+
+    def get_sync_library_use_case(self) -> SyncLibraryUseCase:
+        return SyncLibraryUseCase(uow_factory=self.uow_factory)
 
 
 @lru_cache(maxsize=1)

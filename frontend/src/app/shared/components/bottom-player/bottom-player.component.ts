@@ -34,14 +34,14 @@ export class BottomPlayerComponent {
   openInSystemPlayer(trackId: string): void {
     this.libraryApi.openInSystemPlayer(trackId).subscribe({
       next: () => this.toast.info('Abierto en reproductor local'),
-      error: (e) => this.toast.error('Error al abrir archivo', e.message)
+      error: (e) => this.toast.error('Error al abrir archivo', e.error?.detail || 'No se pudo encontrar el archivo físico.')
     });
   }
 
   openFolder(trackId: string): void {
     this.libraryApi.openContainingFolder(trackId).subscribe({
       next: () => this.toast.info('Carpeta abierta en explorador'),
-      error: (e) => this.toast.error('Error al abrir carpeta', e.message)
+      error: (e) => this.toast.error('Error al abrir carpeta', e.error?.detail || 'No se pudo encontrar el archivo en la carpeta de música.')
     });
   }
 }

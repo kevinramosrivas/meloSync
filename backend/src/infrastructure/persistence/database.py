@@ -282,6 +282,30 @@ class DatabaseManager:
                         logger.warning("Could not add column %s: %s", col_name, e)
 
             conn.connection.commit()
+
+            # Automatic path self-healing for tracks pointing to unlocalized/stale paths
+            cursor.execute("SELECT id, file_path FROM tracks WHERE file_path IS NOT NULL AND status = 'COMPLETADA'")
+            tracks_to_check = cursor.fetchall()
+            fixed_count = 0
+            for t_id, f_path in tracks_to_check:
+                if f_path and not Path(f_path).exists():
+                    p_name = Path(f_path).name
+                    candidates = [
+                        Path.home() / "Música" / "meloSync" / p_name,
+                        Path.home() / "Music" / "meloSync" / p_name,
+                        Path.home() / "meloSync_Music" / p_name,
+                    ]
+                    for cand in candidates:
+                        if cand.is_file():
+                            cursor.execute("UPDATE tracks SET file_path = ? WHERE id = ?", (str(cand.resolve()), t_id))
+                            fixed_count += 1
+                            logger.info("Startup migration self-healed track path '%s' -> '%s'", t_id, cand)
+                            break
+
+            if fixed_count > 0:
+                conn.connection.commit()
+                logger.info("Startup migration self-healed %d stale track path(s)", fixed_count)
+
             cursor.close()
 
         logger.info("Database initialized successfully at '%s'", self._db_path)

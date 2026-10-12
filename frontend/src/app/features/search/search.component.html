@@ -15,7 +15,9 @@
         autofocus
       />
       @if (searchQuery) {
-        <button class="clear-btn" (click)="searchQuery = ''">&times;</button>
+        <button class="clear-btn" type="button" (click)="searchQuery = ''" title="Limpiar">
+          <app-icon name="x" [size]="14" />
+        </button>
       }
       <button
         tuiButton

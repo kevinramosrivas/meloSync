@@ -20,12 +20,21 @@ from .routers import (
 )
 from .websockets import ws_manager, ws_router
 
-# Setup structured logging
-# meloSync 2.0 FastAPI Server with EJS and WebSocket gateway
+from pathlib import Path
+
+# Setup structured logging with safe fallback for headless/windowless GUI execution
+log_handlers: list[logging.Handler] = []
+if sys.stdout is not None:
+    log_handlers.append(logging.StreamHandler(sys.stdout))
+else:
+    log_dir = Path.home() / ".melosync"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_handlers.append(logging.FileHandler(str(log_dir / "melosync_backend.log"), encoding="utf-8"))
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] (%(name)s) %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)],
+    handlers=log_handlers,
 )
 logger = logging.getLogger("meloSync.API")
 

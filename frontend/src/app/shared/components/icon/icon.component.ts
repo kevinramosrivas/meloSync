@@ -20,7 +20,14 @@ export type IconName =
   | 'x'
   | 'save'
   | 'sparkles'
-  | 'check';
+  | 'check'
+  | 'check-circle'
+  | 'alert-circle'
+  | 'alert-triangle'
+  | 'info'
+  | 'headphones'
+  | 'sliders'
+  | 'disc';
 
 @Component({
   selector: 'app-icon',
@@ -123,6 +130,44 @@ export type IconName =
         }
         @case ('check') {
           <polyline points="20 6 9 17 4 12" />
+        }
+        @case ('check-circle') {
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        }
+        @case ('alert-circle') {
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        }
+        @case ('alert-triangle') {
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        }
+        @case ('info') {
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="16" x2="12" y2="12" />
+          <line x1="12" y1="8" x2="12.01" y2="8" />
+        }
+        @case ('headphones') {
+          <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+          <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+        }
+        @case ('sliders') {
+          <line x1="4" y1="21" x2="4" y2="14" />
+          <line x1="4" y1="10" x2="4" y2="3" />
+          <line x1="12" y1="21" x2="12" y2="12" />
+          <line x1="12" y1="8" x2="12" y2="3" />
+          <line x1="20" y1="21" x2="20" y2="16" />
+          <line x1="20" y1="12" x2="20" y2="3" />
+          <line x1="1" y1="14" x2="7" y2="14" />
+          <line x1="9" y1="8" x2="15" y2="8" />
+          <line x1="17" y1="16" x2="23" y2="16" />
+        }
+        @case ('disc') {
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="3" />
         }
       }
     </svg>

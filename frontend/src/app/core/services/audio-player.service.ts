@@ -1,11 +1,13 @@
-import { Injectable, signal, computed, effect } from '@angular/core';
+import { Injectable, signal, computed, effect, inject } from '@angular/core';
 import { Track } from '../../domain/models';
 import { API_CONFIG } from '../config/api.config';
+import { ToastService } from './toast.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AudioPlayerService {
+  private toast = inject(ToastService);
   private audio: HTMLAudioElement;
 
   // Reactive State Signals
@@ -64,8 +66,13 @@ export class AudioPlayerService {
       this.playNext();
     };
 
-    this.audio.onerror = (e) => {
+    this.audio.onerror = () => {
       this.isPlaying.set(false);
+      const trackName = this.currentTrack()?.display_title || 'la pista';
+      this.toast.error(
+        'Error de reproducción',
+        `No se pudo reproducir "${trackName}". Verifica el archivo o sincroniza la carpeta de música.`
+      );
     };
   }
 
@@ -77,8 +84,14 @@ export class AudioPlayerService {
     const streamUrl = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.stream(track.id)}`;
     this.audio.src = streamUrl;
     this.audio.load();
-    this.audio.play().catch(() => {
+    this.audio.play().catch((err) => {
       this.isPlaying.set(false);
+      if (err?.name !== 'AbortError') {
+        this.toast.error(
+          'Error al reproducir',
+          'No se pudo iniciar el audio. Sincroniza la biblioteca si el archivo fue movido.'
+        );
+      }
     });
   }
 

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_CONFIG } from '../core/config/api.config';
-import { DownloadStatus, Track } from '../domain/models';
+import { DownloadStatus, SyncReport, Track } from '../domain/models';
 
 @Injectable({
   providedIn: 'root'
@@ -40,6 +40,13 @@ export class LibraryApiService {
   openContainingFolder(trackId: string): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(
       `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.openFolder(trackId)}`,
+      {}
+    );
+  }
+
+  syncLibrary(): Observable<SyncReport> {
+    return this.http.post<SyncReport>(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.library}/sync`,
       {}
     );
   }

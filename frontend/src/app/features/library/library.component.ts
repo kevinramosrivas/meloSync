@@ -27,6 +27,7 @@ export class LibraryComponent implements OnInit {
 
   readonly tracks = signal<Track[]>([]);
   readonly isLoading = signal<boolean>(false);
+  readonly isSyncing = signal<boolean>(false);
   filterQuery = '';
 
   readonly selectedTrackForEdit = signal<Track | null>(null);
@@ -51,6 +52,21 @@ export class LibraryComponent implements OnInit {
         this.isLoading.set(false);
       },
       error: () => this.isLoading.set(false)
+    });
+  }
+
+  syncLibrary(): void {
+    this.isSyncing.set(true);
+    this.libraryApi.syncLibrary().subscribe({
+      next: (res) => {
+        this.isSyncing.set(false);
+        this.toast.success('Biblioteca Sincronizada', res.message);
+        this.loadLibrary();
+      },
+      error: (e) => {
+        this.isSyncing.set(false);
+        this.toast.error('Error al sincronizar', e.error?.detail || 'No se pudo sincronizar la biblioteca.');
+      }
     });
   }
 
@@ -81,7 +97,7 @@ export class LibraryComponent implements OnInit {
   openFolder(trackId: string): void {
     this.libraryApi.openContainingFolder(trackId).subscribe({
       next: () => this.toast.info('Carpeta abierta en explorador'),
-      error: (e) => this.toast.error('Error al abrir carpeta', e.message)
+      error: (e) => this.toast.error('Error al abrir carpeta', e.error?.detail || 'El archivo físico no se encuentra en el disco.')
     });
   }
 
@@ -100,7 +116,7 @@ export class LibraryComponent implements OnInit {
           this.toast.success('Pista eliminada');
           this.tracks.update(list => list.filter(t => t.id !== track.id));
         },
-        error: (e) => this.toast.error('Error al eliminar pista', e.message)
+        error: (e) => this.toast.error('Error al eliminar pista', e.error?.detail || 'No se pudo eliminar la pista.')
       });
     }
   }

@@ -15,7 +15,10 @@
         <!-- Download Directory -->
         <div class="setting-section">
           <div class="section-info">
-            <h3>Carpeta de Almacenamiento de Música</h3>
+            <h3 class="section-title">
+              <app-icon name="folder" [size]="16" class="section-icon" />
+              <span>Carpeta de Almacenamiento de Música</span>
+            </h3>
             <p>Directorio en tu disco duro donde se guardarán y organizarán tus archivos de audio descargados.</p>
           </div>
 
@@ -33,7 +36,8 @@
               size="s"
               (click)="openFolder()"
             >
-              📁 Abrir en Explorador
+              <app-icon name="folder" [size]="15" />
+              <span>Abrir en Explorador</span>
             </button>
           </div>
         </div>
@@ -43,7 +47,10 @@
         <!-- Audio Quality -->
         <div class="setting-section">
           <div class="section-info">
-            <h3>Calidad de Audio Predeterminada</h3>
+            <h3 class="section-title">
+              <app-icon name="headphones" [size]="16" class="section-icon" />
+              <span>Calidad de Audio Predeterminada</span>
+            </h3>
             <p>Selecciona la tasa de bits (bitrate) preferida para las descargas de YouTube.</p>
           </div>
 
@@ -70,7 +77,10 @@
         <!-- Audio Normalization -->
         <div class="setting-section">
           <div class="section-info">
-            <h3>Normalización de Volumen (FFmpeg Loudnorm)</h3>
+            <h3 class="section-title">
+              <app-icon name="sliders" [size]="16" class="section-icon" />
+              <span>Normalización de Volumen (FFmpeg Loudnorm)</span>
+            </h3>
             <p>Estandariza el volumen de todas las pistas para evitar cambios bruscos al escuchar música (Estándar Apple Music / Spotify: -14 LUFS).</p>
           </div>
 
@@ -95,7 +105,10 @@
         <!-- Auto Tagging -->
         <div class="setting-section">
           <div class="section-info">
-            <h3>Enriquecimiento Automático de Metadatos</h3>
+            <h3 class="section-title">
+              <app-icon name="sparkles" [size]="16" class="section-icon" />
+              <span>Enriquecimiento Automático de Metadatos</span>
+            </h3>
             <p>Consulta automáticamente a Apple iTunes Search API para descargar e incrustar carátulas de 1000x1000 y etiquetas oficiales.</p>
           </div>
 
@@ -116,7 +129,8 @@
             (click)="saveSettings()"
             [disabled]="isSaving()"
           >
-            {{ isSaving() ? 'Guardando...' : '💾 Guardar Preferencias' }}
+            <app-icon [name]="isSaving() ? 'refresh' : 'save'" [size]="16" />
+            <span>{{ isSaving() ? 'Guardando...' : 'Guardar Preferencias' }}</span>
           </button>
         </div>
       </div>

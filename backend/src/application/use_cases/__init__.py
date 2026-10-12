@@ -22,6 +22,7 @@ from .manage_settings import (
     UpdateSettingsUseCase,
 )
 from .search_youtube import SearchYouTubeUseCase
+from .sync_library import SyncLibraryUseCase, SyncReportDTO
 
 __all__ = [
     "AddTrackToPlaylistUseCase",
@@ -34,6 +35,8 @@ __all__ = [
     "GetTrackByIdUseCase",
     "SearchMetadataCandidatesUseCase",
     "SearchYouTubeUseCase",
+    "SyncLibraryUseCase",
+    "SyncReportDTO",
     "UpdateSettingsUseCase",
     "UpdateTrackMetadataUseCase",
 ]

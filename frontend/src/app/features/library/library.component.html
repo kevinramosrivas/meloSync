@@ -16,9 +16,24 @@
           class="filter-input"
         />
         @if (filterQuery) {
-          <button class="clear-btn" (click)="filterQuery = ''">&times;</button>
+          <button class="clear-btn" type="button" (click)="filterQuery = ''" title="Limpiar">
+            <app-icon name="x" [size]="14" />
+          </button>
         }
       </div>
+
+      <button
+        tuiButton
+        type="button"
+        appearance="flat"
+        size="s"
+        (click)="syncLibrary()"
+        [disabled]="isSyncing()"
+        title="Reconciliar rutas y descubrir archivos nuevos en la carpeta"
+      >
+        <app-icon [name]="isSyncing() ? 'refresh' : 'folder'" [size]="14" />
+        <span>{{ isSyncing() ? 'Sincronizando...' : 'Sincronizar Carpeta' }}</span>
+      </button>
 
       <button
         tuiButton
@@ -55,10 +70,14 @@
           <div 
             class="track-card glass-card"
             [class.is-playing]="player.currentTrack()?.id === track.id && player.isPlaying()"
+            [class.is-missing]="track.file_exists === false"
             (dblclick)="play(track)">
 
             <!-- Cover Image Box -->
             <div class="cover-box">
+              @if (track.file_exists === false) {
+                <span class="missing-badge" title="Archivo físico no encontrado en disco">No encontrado</span>
+              }
               @if (getCoverUrl(track)) {
                 <img [src]="getCoverUrl(track)" [alt]="track.display_title" class="cover-img" loading="lazy" />
               } @else {

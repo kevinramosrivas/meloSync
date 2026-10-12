@@ -5,11 +5,12 @@ import { TuiButton } from '@taiga-ui/core';
 import { SettingsApiService } from '../../data/settings-api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AppSettings, AudioQuality } from '../../domain/models';
+import { IconComponent } from '../../shared/components/icon/icon.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, TuiButton],
+  imports: [CommonModule, FormsModule, TuiButton, IconComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.css'
 })

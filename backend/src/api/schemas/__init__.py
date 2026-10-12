@@ -107,6 +107,7 @@ class TrackResponse(BaseModel):
     status: DownloadStatus
     progress_percent: float
     file_path: Optional[str] = None
+    file_exists: bool = True
     error_message: Optional[str] = None
     metadata: Optional[TrackMetadataResponse] = None
     created_at_iso: str = ""
@@ -114,6 +115,10 @@ class TrackResponse(BaseModel):
 
     @classmethod
     def from_dto(cls, dto: Any) -> TrackResponse:
+        file_exists = True
+        if dto.status == DownloadStatus.COMPLETADA:
+            file_exists = bool(dto.file_path and Path(dto.file_path).exists())
+
         return cls(
             id=dto.id,
             youtube_id=dto.youtube_id,
@@ -128,11 +133,20 @@ class TrackResponse(BaseModel):
             status=dto.status,
             progress_percent=dto.progress_percent,
             file_path=dto.file_path,
+            file_exists=file_exists,
             error_message=dto.error_message,
             metadata=TrackMetadataResponse.from_dto(dto.metadata),
             created_at_iso=dto.created_at_iso,
             updated_at_iso=dto.updated_at_iso,
         )
+
+
+class SyncLibraryResponse(BaseModel):
+    repaired_count: int
+    imported_count: int
+    missing_count: int
+    total_tracks: int
+    message: str
 
 
 # Settings Schemas

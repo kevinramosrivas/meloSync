@@ -36,8 +36,17 @@ export interface Track {
   status: DownloadStatus;
   progress_percent: number;
   file_path?: string | null;
+  file_exists?: boolean;
   error_message?: string | null;
   metadata?: TrackMetadata | null;
   created_at_iso?: string;
   updated_at_iso?: string;
+}
+
+export interface SyncReport {
+  repaired_count: number;
+  imported_count: number;
+  missing_count: number;
+  total_tracks: number;
+  message: string;
 }

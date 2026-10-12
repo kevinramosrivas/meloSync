@@ -38,10 +38,20 @@
   gap: 12px;
 }
 
-.section-info h3 {
+.section-info h3,
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.section-icon {
+  color: var(--accent-primary);
+  opacity: 0.95;
+  display: inline-flex;
 }
 
 .section-info p {
