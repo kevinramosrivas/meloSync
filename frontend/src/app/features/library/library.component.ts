@@ -38,20 +38,32 @@ export class LibraryComponent implements OnInit {
       this.ws.libraryUpdated();
       this.loadLibrary();
     });
+
+    // Reload library when WebSocket connects (handles sidecar boot delay)
+    effect(() => {
+      if (this.ws.isConnected()) {
+        this.loadLibrary();
+      }
+    });
   }
 
   ngOnInit(): void {
     this.loadLibrary();
   }
 
-  loadLibrary(): void {
+  loadLibrary(retryCount = 0): void {
     this.isLoading.set(true);
     this.libraryApi.getLibrary('COMPLETADA').subscribe({
       next: (data) => {
         this.tracks.set(data);
         this.isLoading.set(false);
       },
-      error: () => this.isLoading.set(false)
+      error: () => {
+        this.isLoading.set(false);
+        if (retryCount < 2) {
+          setTimeout(() => this.loadLibrary(retryCount + 1), 1500);
+        }
+      }
     });
   }
 

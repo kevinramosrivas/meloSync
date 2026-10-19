@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 from typing import Callable, Optional
 
 from ...domain.exceptions import AudioProcessingException
@@ -19,7 +20,22 @@ class FFmpegAudioProcessor(IAudioProcessorService):
     """Encapsulates ffmpeg process execution to normalize audio (EBU R128 loudnorm) and trim silence."""
 
     def __init__(self, ffmpeg_path: Optional[str] = None) -> None:
-        self._ffmpeg_path = ffmpeg_path or shutil.which("ffmpeg") or "ffmpeg"
+        self._ffmpeg_path = ffmpeg_path or self._resolve_ffmpeg_binary()
+
+    @staticmethod
+    def _resolve_ffmpeg_binary() -> str:
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            meipass_path = Path(sys._MEIPASS)
+            cand = meipass_path / ("ffmpeg.exe" if sys.platform == "win32" else "ffmpeg")
+            if cand.exists():
+                return str(cand)
+
+        exe_dir = Path(sys.executable).parent
+        for cand in [exe_dir / "ffmpeg.exe", exe_dir / "bin" / "ffmpeg.exe", exe_dir / "ffmpeg"]:
+            if cand.exists():
+                return str(cand)
+
+        return shutil.which("ffmpeg") or "ffmpeg"
 
     def normalize_and_trim(
         self,

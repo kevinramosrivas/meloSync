@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 import re
 import shutil
+import sys
 from typing import Any, Optional, cast
 
 import yt_dlp
@@ -37,6 +38,28 @@ class YtDlpAudioDownloader(IAudioDownloaderService, IYouTubeSearchService):
                 }
             },
         }
+
+        # Resolve ffmpeg directory for yt-dlp postprocessors (bundled PyInstaller, Tauri, or system)
+        ffmpeg_dir = None
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            meipass_path = Path(sys._MEIPASS)
+            if (meipass_path / "ffmpeg.exe").exists() or (meipass_path / "ffmpeg").exists():
+                ffmpeg_dir = str(meipass_path)
+
+        if not ffmpeg_dir:
+            exe_dir = Path(sys.executable).parent
+            for cand in [exe_dir, exe_dir / "bin"]:
+                if (cand / "ffmpeg.exe").exists() or (cand / "ffmpeg").exists():
+                    ffmpeg_dir = str(cand)
+                    break
+
+        if not ffmpeg_dir:
+            system_ffmpeg = shutil.which("ffmpeg")
+            if system_ffmpeg:
+                ffmpeg_dir = str(Path(system_ffmpeg).parent)
+
+        if ffmpeg_dir:
+            opts["ffmpeg_location"] = ffmpeg_dir
 
         # Detect JavaScript runtime (Node.js or Deno) for YouTube signature/challenge solving
         node_path = shutil.which("node") or shutil.which("deno")

@@ -50,8 +50,19 @@ pub fn run() {
             if let tauri::WindowEvent::Destroyed = event {
                 if let Some(state) = window.try_state::<BackendProcess>() {
                     if let Ok(mut lock) = state.0.lock() {
-                        if let Some(mut child) = lock.take() {
-                            let _ = child.kill();
+                        if let Some(child) = lock.take() {
+                            #[cfg(windows)]
+                            {
+                                let pid = child.id();
+                                let mut kill_cmd = Command::new("taskkill");
+                                kill_cmd.args(["/F", "/T", "/PID", &pid.to_string()]);
+                                kill_cmd.creation_flags(CREATE_NO_WINDOW);
+                                let _ = kill_cmd.status();
+                            }
+                            #[cfg(not(windows))]
+                            {
+                                let _ = child.kill();
+                            }
                         }
                     }
                 }

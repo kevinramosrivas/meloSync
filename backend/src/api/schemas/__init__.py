@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Optional
 from pydantic import BaseModel, Field
 
@@ -117,7 +118,10 @@ class TrackResponse(BaseModel):
     def from_dto(cls, dto: Any) -> TrackResponse:
         file_exists = True
         if dto.status == DownloadStatus.COMPLETADA:
-            file_exists = bool(dto.file_path and Path(dto.file_path).exists())
+            try:
+                file_exists = bool(dto.file_path and Path(dto.file_path).is_file())
+            except Exception:
+                file_exists = False
 
         return cls(
             id=dto.id,
