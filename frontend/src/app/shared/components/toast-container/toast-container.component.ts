@@ -5,10 +5,8 @@ import { IconComponent, IconName } from '../icon/icon.component';
 
 @Component({
   selector: 'app-toast-container',
-  standalone: true,
   imports: [CommonModule, IconComponent],
-  templateUrl: './toast-container.component.html',
-  styleUrl: './toast-container.component.css'
+  templateUrl: './toast-container.component.html'
 })
 export class ToastContainerComponent {
   readonly toastService = inject(ToastService);

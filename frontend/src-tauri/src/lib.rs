@@ -43,6 +43,13 @@ pub fn run() {
                 }
             }
 
+            // Forzar la aplicación del icono en la ventana y barra de tareas para Windows/Linux
+            if let Some(window) = app.get_webview_window("main") {
+                if let Some(icon) = app.default_window_icon() {
+                    let _ = window.set_icon(icon.clone());
+                }
+            }
+
             app.manage(BackendProcess(Mutex::new(backend_child)));
             Ok(())
         })

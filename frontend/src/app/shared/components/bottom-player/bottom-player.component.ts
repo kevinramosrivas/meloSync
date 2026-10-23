@@ -8,10 +8,8 @@ import { IconComponent } from '../icon/icon.component';
 
 @Component({
   selector: 'app-bottom-player',
-  standalone: true,
   imports: [CommonModule, DurationPipe, IconComponent],
-  templateUrl: './bottom-player.component.html',
-  styleUrl: './bottom-player.component.css'
+  templateUrl: './bottom-player.component.html'
 })
 export class BottomPlayerComponent {
   readonly player = inject(AudioPlayerService);

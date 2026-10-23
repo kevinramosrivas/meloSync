@@ -1,52 +1,55 @@
-<footer class="player-container glass-panel">
+<footer class="h-full w-full flex items-center justify-between px-8">
   <!-- Left: Track Metadata & Cover -->
-  <div class="player-left">
+  <div class="flex items-center gap-3.5 w-1/4 min-w-[250px] max-w-[380px] min-w-0">
     @if (player.currentTrack(); as track) {
-      <div class="cover-wrapper">
+      <div class="h-13 w-13 shrink-0 rounded-xl overflow-hidden bg-[#181822] border border-white/[0.08] shadow-md">
         @if (player.coverUrl()) {
-          <img [src]="player.coverUrl()" alt="Cover" class="track-cover" />
+          <img [src]="player.coverUrl()" alt="Cover" class="block h-full w-full object-cover" />
         } @else {
-          <div class="track-cover-placeholder">
+          <div class="flex h-full w-full items-center justify-center text-zinc-500">
             <app-icon name="music" [size]="22" />
           </div>
         }
       </div>
-      <div class="track-info">
-        <span class="track-title" [title]="track.display_title">{{ track.display_title }}</span>
-        <span class="track-artist" [title]="track.display_artist">{{ track.display_artist }}</span>
+      <div class="flex flex-col min-w-0">
+        <span class="text-sm font-bold text-white truncate leading-tight" [title]="track.display_title">{{ track.display_title }}</span>
+        <span class="text-xs font-medium text-zinc-400 truncate mt-0.5" [title]="track.display_artist">{{ track.display_artist }}</span>
       </div>
     } @else {
-      <div class="player-idle">
-        <span class="idle-icon">
+      <div class="flex items-center gap-3 text-xs text-zinc-400">
+        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/[0.05] border border-white/[0.08] text-zinc-500">
           <app-icon name="music" [size]="18" />
-        </span>
-        <span class="idle-text">Selecciona una pista para reproducir</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-semibold text-zinc-300">Sin reproducción</span>
+          <span class="text-[11px] text-zinc-500">Elige una pista de tu biblioteca</span>
+        </div>
       </div>
     }
   </div>
 
   <!-- Center: Playback Controls & Timeline -->
-  <div class="player-center">
+  <div class="flex flex-col items-center justify-center gap-1.5 flex-1 max-w-[680px] mx-6">
     <!-- Control buttons -->
-    <div class="playback-controls">
+    <div class="flex items-center gap-5">
       <button
         type="button"
         (click)="player.playPrevious()"
         title="Pista anterior"
         [disabled]="!player.currentTrack()"
-        class="player-btn"
+        class="flex h-8 w-8 items-center justify-center rounded-full text-zinc-300 hover:text-white hover:bg-white/[0.1] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
       >
         <app-icon name="skip-back" [size]="18" />
       </button>
 
       <button
         type="button"
-        class="player-main-btn"
+        class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-tr from-[#fa2d48] to-[#ff4760] text-white shadow-lg shadow-[#fa2d48]/40 hover:scale-105 active:scale-95 transition-all disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
         (click)="player.togglePlay()"
         title="Reproducir / Pausar"
         [disabled]="!player.currentTrack()"
       >
-        <app-icon [name]="player.isPlaying() ? 'pause' : 'play'" [size]="20" />
+        <app-icon [name]="player.isPlaying() ? 'pause' : 'play'" [size]="21" />
       </button>
 
       <button
@@ -54,30 +57,32 @@
         (click)="player.playNext()"
         title="Pista siguiente"
         [disabled]="!player.currentTrack()"
-        class="player-btn"
+        class="flex h-8 w-8 items-center justify-center rounded-full text-zinc-300 hover:text-white hover:bg-white/[0.1] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
       >
         <app-icon name="skip-forward" [size]="18" />
       </button>
     </div>
 
     <!-- Timeline / Seek bar -->
-    <div class="timeline-wrapper">
-      <span class="time-label">{{ player.currentTime() | duration }}</span>
+    <div class="flex items-center gap-3 w-full">
+      <span class="w-10 text-right text-[11px] font-semibold text-zinc-400 tabular-nums">{{ player.currentTime() | duration }}</span>
 
-      <div class="seek-track" (click)="onSeekClick($event)">
-        <div class="seek-fill" [style.width.%]="player.progressPercent()"></div>
+      <div class="group relative flex h-1.5 hover:h-2 flex-1 rounded-full bg-white/[0.12] cursor-pointer transition-[height] items-center" (click)="onSeekClick($event)">
+        <div class="h-full rounded-full bg-gradient-to-r from-[#fa2d48] to-[#ff4760] relative" [style.width.%]="player.progressPercent()">
+          <span class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity"></span>
+        </div>
       </div>
 
-      <span class="time-label">{{ player.duration() | duration }}</span>
+      <span class="w-10 text-left text-[11px] font-semibold text-zinc-400 tabular-nums">{{ player.duration() | duration }}</span>
     </div>
   </div>
 
   <!-- Right: Actions & Volume -->
-  <div class="player-right">
+  <div class="flex items-center justify-end gap-3 w-1/4 min-w-[250px] max-w-[380px]">
     @if (player.currentTrack(); as track) {
       <button
         type="button"
-        class="player-action-btn"
+        class="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
         (click)="openInSystemPlayer(track.id)"
         title="Abrir en reproductor del sistema"
       >
@@ -85,7 +90,7 @@
       </button>
       <button
         type="button"
-        class="player-action-btn"
+        class="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
         (click)="openFolder(track.id)"
         title="Revelar en explorador"
       >
@@ -94,10 +99,10 @@
     }
 
     <!-- Volume Control -->
-    <div class="volume-wrapper">
+    <div class="flex items-center gap-2.5 ml-2">
       <button
         type="button"
-        class="player-action-btn"
+        class="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
         (click)="player.toggleMute()"
         title="Silenciar / Activar sonido"
       >
@@ -110,7 +115,7 @@
         step="0.01" 
         [value]="player.volume()" 
         (input)="onVolumeChange($event)"
-        class="volume-slider" 
+        class="w-24 h-1.5 accent-[#fa2d48] cursor-pointer" 
       />
     </div>
   </div>

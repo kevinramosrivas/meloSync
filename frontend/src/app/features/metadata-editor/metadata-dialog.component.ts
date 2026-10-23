@@ -1,7 +1,5 @@
-import { Component, EventEmitter, Input, Output, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, signal, OnInit, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TuiButton } from '@taiga-ui/core';
 import { MetadataApiService } from '../../data/metadata-api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Track, TrackMetadata } from '../../domain/models';
@@ -9,15 +7,16 @@ import { IconComponent } from '../../shared/components/icon/icon.component';
 
 @Component({
   selector: 'app-metadata-dialog',
-  standalone: true,
-  imports: [CommonModule, FormsModule, TuiButton, IconComponent],
+  imports: [FormsModule, IconComponent],
   templateUrl: './metadata-dialog.component.html',
-  styleUrl: './metadata-dialog.component.css'
+  host: {
+    '(keydown.escape)': 'close.emit()'
+  }
 })
 export class MetadataDialogComponent implements OnInit {
-  @Input({ required: true }) track!: Track;
-  @Output() close = new EventEmitter<void>();
-  @Output() updated = new EventEmitter<Track>();
+  readonly track = input.required<Track>();
+  readonly close = output<void>();
+  readonly updated = output<Track>();
 
   private metadataApi = inject(MetadataApiService);
   private toast = inject(ToastService);
@@ -36,14 +35,15 @@ export class MetadataDialogComponent implements OnInit {
   formCoverUrl = '';
 
   ngOnInit(): void {
-    if (this.track) {
-      this.formTitle = this.track.metadata?.title || this.track.original_title;
-      this.formArtist = this.track.metadata?.artist || this.track.channel_name;
-      this.formAlbum = this.track.metadata?.album || 'Sencillo';
-      this.formYear = this.track.metadata?.year || null;
-      this.formGenre = this.track.metadata?.genre || '';
-      this.formTrackNumber = this.track.metadata?.track_number || null;
-      this.formCoverUrl = this.track.metadata?.cover_url || '';
+    const currentTrack = this.track();
+    if (currentTrack) {
+      this.formTitle = currentTrack.metadata?.title || currentTrack.original_title;
+      this.formArtist = currentTrack.metadata?.artist || currentTrack.channel_name;
+      this.formAlbum = currentTrack.metadata?.album || 'Sencillo';
+      this.formYear = currentTrack.metadata?.year || null;
+      this.formGenre = currentTrack.metadata?.genre || '';
+      this.formTrackNumber = currentTrack.metadata?.track_number || null;
+      this.formCoverUrl = currentTrack.metadata?.cover_url || '';
       this.searchCandidateQuery = `${this.formArtist} ${this.formTitle}`.trim();
     }
   }
@@ -92,7 +92,7 @@ export class MetadataDialogComponent implements OnInit {
       cover_url: this.formCoverUrl,
     };
 
-    this.metadataApi.updateTrackMetadata(this.track.id, payload).subscribe({
+    this.metadataApi.updateTrackMetadata(this.track().id, payload).subscribe({
       next: (updatedTrack) => {
         this.isSaving.set(false);
         this.toast.success('Metadatos actualizados y guardados en el archivo');

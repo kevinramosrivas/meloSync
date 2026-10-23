@@ -1,17 +1,18 @@
 <tui-root>
-  <div class="app-layout">
-    <!-- Sidebar -->
-    <app-sidebar />
+  <div class="flex flex-col h-screen w-screen overflow-hidden bg-[#0a0a0e] text-white select-none">
+    <!-- Top Workspace: Sidebar + Scrollable View -->
+    <div class="flex flex-1 overflow-hidden min-h-0">
+      <app-sidebar class="w-[260px] shrink-0 h-full border-r border-white/[0.08] bg-[#0c0c10]" />
 
-    <!-- Main Scrollable Content Area -->
-    <div class="main-content">
-      <router-outlet />
+      <main class="flex-1 overflow-y-auto min-w-0 main-ambient-bg">
+        <router-outlet />
+      </main>
     </div>
 
-    <!-- Persistent Bottom Player -->
-    <app-bottom-player />
+    <!-- Docked Bottom Player: Fixed to window footer, never overlaps scrollable content -->
+    <app-bottom-player class="h-[86px] shrink-0 border-t border-white/[0.08] bg-[#121217]/95 backdrop-blur-2xl shadow-[0_-8px_32px_rgba(0,0,0,0.6)] z-40 block" />
 
-    <!-- Toast Container -->
+    <!-- Toast Notifications -->
     <app-toast-container />
   </div>
 </tui-root>

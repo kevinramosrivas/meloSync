@@ -1,35 +1,33 @@
-<div class="modal-backdrop animate-fade-in" (click)="onBackdropClick($event)">
-  <div class="modal-card glass-panel">
-    <header class="modal-header">
+<div class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/75 backdrop-blur-md animate-fade-in" (click)="onBackdropClick($event)">
+  <div class="flex flex-col w-full max-w-[760px] max-h-[90vh] overflow-y-auto rounded-2xl bg-[#14141c]/98 backdrop-blur-2xl border border-white/[0.1] shadow-2xl">
+    <header class="flex items-start justify-between p-5 border-b border-white/[0.08]">
       <div>
-        <h2 class="modal-title">Editor de Metadatos</h2>
-        <p class="modal-subtitle">Enriquece y ajusta las etiquetas ID3v2.4 y carátula oficial</p>
+        <h2 class="text-lg font-bold tracking-tight text-white">Editor de Metadatos</h2>
+        <p class="text-xs text-zinc-400 mt-0.5">Enriquece y ajusta las etiquetas ID3v2.4 y carátula oficial</p>
       </div>
       <button
         type="button"
-        class="btn-close"
+        class="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
         (click)="close.emit()"
         title="Cerrar modal"
       >
-        <app-icon name="x" [size]="18" />
+        <app-icon name="x" [size]="16" />
       </button>
     </header>
 
-    <div class="modal-body">
+    <div class="flex flex-col gap-5 p-5">
       <!-- iTunes Search candidates row -->
-      <div class="itunes-search-box">
+      <div class="flex gap-2">
         <input 
           type="text" 
           [(ngModel)]="searchCandidateQuery" 
           placeholder="Buscar en iTunes (ej. Daft Punk One More Time)..." 
-          class="input-text"
+          class="flex-1 rounded-xl border border-white/[0.1] bg-[#1a1a24] px-4 py-2 text-xs text-white placeholder:text-zinc-500 focus:border-[#fa2d48] outline-none transition-colors"
           (keyup.enter)="searchCandidates()"
         />
         <button
-          tuiButton
           type="button"
-          appearance="flat"
-          size="m"
+          class="btn-secondary"
           (click)="searchCandidates()"
           [disabled]="isSearchingCandidates()"
         >
@@ -40,17 +38,19 @@
 
       <!-- Candidates horizontal carousel/chips if any -->
       @if (candidates().length > 0) {
-        <div class="candidates-carousel">
-          <span class="candidates-label">Sugerencias encontradas:</span>
-          <div class="candidates-list">
+        <div class="flex flex-col gap-2">
+          <span class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Sugerencias encontradas:</span>
+          <div class="flex gap-2 overflow-x-auto pb-1.5">
             @for (c of candidates(); track c.title + c.artist) {
-              <div class="candidate-chip glass-card" (click)="applyCandidate(c)">
+              <div 
+                class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#1c1c28] hover:bg-[#242434] border border-white/[0.08] hover:border-white/[0.18] cursor-pointer shrink-0 transition-colors shadow-sm" 
+                (click)="applyCandidate(c)">
                 @if (c.cover_url) {
-                  <img [src]="c.cover_url" class="candidate-img" alt="Cover" />
+                  <img [src]="c.cover_url" class="h-8 w-8 rounded-lg object-cover" alt="Cover" />
                 }
-                <div class="candidate-meta">
-                  <span class="c-title">{{ c.title }}</span>
-                  <span class="c-artist">{{ c.artist }} &bull; {{ c.year || 'S/A' }}</span>
+                <div class="flex flex-col">
+                  <span class="text-xs font-semibold text-white">{{ c.title }}</span>
+                  <span class="text-[10px] text-zinc-400">{{ c.artist }} &bull; {{ c.year || 'S/A' }}</span>
                 </div>
               </div>
             }
@@ -59,15 +59,15 @@
       }
 
       <!-- Form Grid -->
-      <div class="form-layout">
+      <div class="grid grid-cols-[200px_1fr] gap-6">
         <!-- Left: Cover Preview -->
-        <div class="cover-column">
-          <div class="cover-preview-box">
+        <div class="flex flex-col gap-2.5">
+          <div class="aspect-square w-full rounded-xl bg-[#181822] border border-white/[0.08] overflow-hidden flex items-center justify-center shadow-md">
             @if (formCoverUrl) {
-              <img [src]="formCoverUrl" alt="Cover Preview" class="cover-img" />
+              <img [src]="formCoverUrl" alt="Cover Preview" class="block h-full w-full object-cover" />
             } @else {
-              <div class="no-cover">
-                <app-icon name="music" [size]="32" />
+              <div class="flex flex-col items-center gap-1.5 text-xs text-zinc-500">
+                <app-icon name="music" [size]="36" />
                 <span>Sin Carátula</span>
               </div>
             }
@@ -76,66 +76,62 @@
             type="text" 
             [(ngModel)]="formCoverUrl" 
             placeholder="URL de carátula (1000x1000)..." 
-            class="input-text cover-url-input" 
+            class="rounded-lg border border-white/[0.08] bg-[#1a1a24] px-3 py-1.5 text-[11px] text-white placeholder:text-zinc-500 focus:border-[#fa2d48] outline-none transition-colors" 
           />
         </div>
 
         <!-- Right: Fields -->
-        <div class="fields-column">
-          <div class="field-group">
-            <label>Título de la Canción</label>
-            <input type="text" [(ngModel)]="formTitle" class="input-text" />
+        <div class="flex flex-col gap-3.5">
+          <div class="flex flex-col gap-1">
+            <label class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Título de la Canción</label>
+            <input type="text" [(ngModel)]="formTitle" class="w-full rounded-lg border border-white/[0.08] bg-[#1a1a24] px-3.5 py-2 text-xs text-white focus:border-[#fa2d48] outline-none transition-colors" />
           </div>
 
-          <div class="field-group">
-            <label>Artista</label>
-            <input type="text" [(ngModel)]="formArtist" class="input-text" />
+          <div class="flex flex-col gap-1">
+            <label class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Artista</label>
+            <input type="text" [(ngModel)]="formArtist" class="w-full rounded-lg border border-white/[0.08] bg-[#1a1a24] px-3.5 py-2 text-xs text-white focus:border-[#fa2d48] outline-none transition-colors" />
           </div>
 
-          <div class="field-group">
-            <label>Álbum</label>
-            <input type="text" [(ngModel)]="formAlbum" class="input-text" />
+          <div class="flex flex-col gap-1">
+            <label class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Álbum</label>
+            <input type="text" [(ngModel)]="formAlbum" class="w-full rounded-lg border border-white/[0.08] bg-[#1a1a24] px-3.5 py-2 text-xs text-white focus:border-[#fa2d48] outline-none transition-colors" />
           </div>
 
-          <div class="fields-row">
-            <div class="field-group">
-              <label>Año</label>
-              <input type="number" [(ngModel)]="formYear" class="input-text" placeholder="2024" />
+          <div class="grid grid-cols-[1fr_1.4fr_1fr] gap-2.5">
+            <div class="flex flex-col gap-1">
+              <label class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Año</label>
+              <input type="number" [(ngModel)]="formYear" class="w-full rounded-lg border border-white/[0.08] bg-[#1a1a24] px-3 py-2 text-xs text-white placeholder:text-zinc-500 focus:border-[#fa2d48] outline-none transition-colors" placeholder="2024" />
             </div>
 
-            <div class="field-group">
-              <label>Género</label>
-              <input type="text" [(ngModel)]="formGenre" class="input-text" placeholder="Electronic" />
+            <div class="flex flex-col gap-1">
+              <label class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Género</label>
+              <input type="text" [(ngModel)]="formGenre" class="w-full rounded-lg border border-white/[0.08] bg-[#1a1a24] px-3 py-2 text-xs text-white placeholder:text-zinc-500 focus:border-[#fa2d48] outline-none transition-colors" placeholder="Pop" />
             </div>
 
-            <div class="field-group">
-              <label>Pista Nº</label>
-              <input type="number" [(ngModel)]="formTrackNumber" class="input-text" placeholder="1" />
+            <div class="flex flex-col gap-1">
+              <label class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Pista Nº</label>
+              <input type="number" [(ngModel)]="formTrackNumber" class="w-full rounded-lg border border-white/[0.08] bg-[#1a1a24] px-3 py-2 text-xs text-white placeholder:text-zinc-500 focus:border-[#fa2d48] outline-none transition-colors" placeholder="1" />
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <footer class="modal-footer">
+    <footer class="flex items-center justify-end gap-3 p-4 border-t border-white/[0.08] bg-black/30">
       <button
-        tuiButton
         type="button"
-        appearance="flat"
-        size="m"
+        class="btn-secondary"
         (click)="close.emit()"
       >
         Cancelar
       </button>
       <button
-        tuiButton
         type="button"
-        appearance="primary"
-        size="m"
+        class="btn-primary"
         (click)="save()"
         [disabled]="isSaving()"
       >
-        <app-icon name="save" [size]="16" />
+        <app-icon name="save" [size]="15" />
         <span>{{ isSaving() ? 'Guardando e Inyectando...' : 'Guardar Metadatos' }}</span>
       </button>
     </footer>

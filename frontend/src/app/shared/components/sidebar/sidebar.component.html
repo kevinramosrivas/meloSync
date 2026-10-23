@@ -1,62 +1,68 @@
-<aside class="sidebar glass-panel">
-  <!-- App Brand / Logo -->
-  <div class="brand">
-    <div class="brand-icon">
-      <app-icon name="music" [size]="20" />
+<aside class="flex flex-col h-full w-full p-4.5 justify-between">
+  <div class="flex flex-col gap-6">
+    <!-- App Brand / Logo -->
+    <div class="flex items-center gap-3 px-2 pt-2 pb-1">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#fa2d48] to-[#ff4d64] shadow-md shadow-[#fa2d48]/30">
+        <app-icon name="music" [size]="22" class="text-white" />
+      </div>
+      <div class="flex flex-col">
+        <span class="text-[17px] font-extrabold tracking-tight bg-gradient-to-r from-white via-white to-zinc-300 bg-clip-text text-transparent leading-none">meloSync</span>
+        <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mt-1">Music Manager</span>
+      </div>
     </div>
-    <div class="brand-text">
-      <span class="brand-title">meloSync</span>
-      <span class="brand-subtitle">Music Manager</span>
-    </div>
+
+    <!-- Navigation Links -->
+    <nav class="flex flex-col gap-1.5 px-1">
+      <div class="px-3 pb-1 pt-1 text-[10.5px] font-bold uppercase tracking-widest text-zinc-500">Explorar</div>
+
+      <a routerLink="/search" routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" class="group flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium text-zinc-400 transition-all hover:bg-white/[0.06] hover:text-white">
+        <app-icon name="search" [size]="18" class="nav-icon text-zinc-400 group-hover:text-white transition-colors" />
+        <span class="flex-1">Buscar</span>
+      </a>
+
+      <a routerLink="/downloads" routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" class="group flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium text-zinc-400 transition-all hover:bg-white/[0.06] hover:text-white">
+        <app-icon name="download" [size]="18" class="nav-icon text-zinc-400 group-hover:text-white transition-colors" />
+        <span class="flex-1">Descargas</span>
+        @if (activeProgress()) {
+          <span class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-zinc-950 shadow-sm">1</span>
+        }
+      </a>
+
+      <a routerLink="/library" routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" class="group flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium text-zinc-400 transition-all hover:bg-white/[0.06] hover:text-white">
+        <app-icon name="library" [size]="18" class="nav-icon text-zinc-400 group-hover:text-white transition-colors" />
+        <span class="flex-1">Biblioteca</span>
+      </a>
+
+      <div class="px-3 pb-1 pt-4 text-[10.5px] font-bold uppercase tracking-widest text-zinc-500">Configuración</div>
+
+      <a routerLink="/settings" routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" class="group flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium text-zinc-400 transition-all hover:bg-white/[0.06] hover:text-white">
+        <app-icon name="settings" [size]="18" class="nav-icon text-zinc-400 group-hover:text-white transition-colors" />
+        <span class="flex-1">Ajustes</span>
+      </a>
+    </nav>
   </div>
 
-  <!-- Navigation Links -->
-  <nav class="nav-menu">
-    <div class="nav-section-title">Explorar</div>
-
-    <a routerLink="/search" routerLinkActive="active" class="nav-item">
-      <app-icon name="search" [size]="18" class="nav-icon" />
-      <span class="nav-label">Buscar</span>
-    </a>
-
-    <a routerLink="/downloads" routerLinkActive="active" class="nav-item">
-      <app-icon name="download" [size]="18" class="nav-icon" />
-      <span class="nav-label">Descargas</span>
-      @if (activeProgress()) {
-        <span tuiBadge size="s" appearance="primary" class="pulse">1</span>
-      }
-    </a>
-
-    <a routerLink="/library" routerLinkActive="active" class="nav-item">
-      <app-icon name="library" [size]="18" class="nav-icon" />
-      <span class="nav-label">Biblioteca</span>
-    </a>
-
-    <div class="nav-section-title mt-6">Configuración</div>
-
-    <a routerLink="/settings" routerLinkActive="active" class="nav-item">
-      <app-icon name="settings" [size]="18" class="nav-icon" />
-      <span class="nav-label">Ajustes</span>
-    </a>
-  </nav>
-
   <!-- Sidebar Footer (Status & Quick Action) -->
-  <div class="sidebar-footer">
+  <div class="flex flex-col gap-3.5 border-t border-white/[0.08] pt-4 px-1">
     <button
-      tuiButton
       type="button"
-      appearance="flat"
-      size="s"
-      class="quick-folder-btn"
+      class="btn-secondary w-full justify-start text-xs rounded-xl"
       (click)="openMusicFolder()"
     >
-      <app-icon name="folder" [size]="15" />
+      <app-icon name="folder" [size]="16" />
       <span>Abrir Carpeta</span>
     </button>
 
-    <div class="connection-status">
-      <span class="status-dot" [class.connected]="ws.isConnected()"></span>
-      <span class="status-text">
+    <div class="flex items-center gap-2.5 px-2 text-[11.5px] text-zinc-400">
+      <span class="relative flex h-2 w-2">
+        @if (ws.isConnected()) {
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
+        } @else {
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+        }
+      </span>
+      <span>
         {{ ws.isConnected() ? 'Servidor Conectado' : 'Conectando...' }}
       </span>
     </div>

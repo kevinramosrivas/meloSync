@@ -1,39 +1,37 @@
-<div class="settings-view animate-fade-in">
-  <header class="settings-header">
-    <h1 class="page-title">Ajustes y Preferencias</h1>
-    <p class="page-subtitle">Configura el almacenamiento de música, calidad de audio y normalización</p>
+<div class="flex flex-col gap-8 p-8 pb-16 max-w-4xl mx-auto w-full animate-fade-in">
+  <header class="flex flex-col gap-1.5">
+    <h1 class="text-3xl font-extrabold tracking-tight text-white">Ajustes y Preferencias</h1>
+    <p class="text-xs font-medium text-zinc-400">Configura el almacenamiento de música, calidad de audio y normalización</p>
   </header>
 
-  <main class="settings-content">
+  <main class="w-full">
     @if (isLoading()) {
-      <div class="loading-state">
-        <div class="spinner"></div>
-        <span>Cargando configuración...</span>
+      <div class="flex flex-col items-center justify-center py-32 gap-4 text-center text-zinc-400">
+        <div class="w-9 h-9 rounded-full border-2 border-white/10 border-t-[#fa2d48] animate-spin"></div>
+        <span class="text-xs font-medium">Cargando configuración...</span>
       </div>
     } @else {
-      <div class="settings-card glass-card">
+      <div class="flex flex-col gap-6 p-7 rounded-2xl bg-[#14141c]/80 border border-white/[0.08] shadow-md shadow-black/40">
         <!-- Download Directory -->
-        <div class="setting-section">
-          <div class="section-info">
-            <h3 class="section-title">
-              <app-icon name="folder" [size]="16" class="section-icon" />
+        <div class="flex flex-col gap-3.5">
+          <div>
+            <h3 class="flex items-center gap-2.5 text-sm font-bold text-white">
+              <app-icon name="folder" [size]="18" class="text-[#fa2d48]" />
               <span>Carpeta de Almacenamiento de Música</span>
             </h3>
-            <p>Directorio en tu disco duro donde se guardarán y organizarán tus archivos de audio descargados.</p>
+            <p class="text-xs text-zinc-400 mt-1 leading-relaxed">Directorio en tu disco duro donde se guardarán y organizarán tus archivos de audio descargados.</p>
           </div>
 
-          <div class="directory-input-box">
+          <div class="flex gap-3">
             <input 
               type="text" 
               [(ngModel)]="downloadDir" 
-              class="input-text" 
+              class="flex-1 rounded-xl border border-white/[0.1] bg-[#181824] px-4 py-2.5 text-xs text-white placeholder:text-zinc-500 focus:border-[#fa2d48] outline-none transition-colors" 
               placeholder="C:/Users/.../Music/meloSync"
             />
             <button
-              tuiButton
               type="button"
-              appearance="flat"
-              size="s"
+              class="btn-secondary"
               (click)="openFolder()"
             >
               <app-icon name="folder" [size]="15" />
@@ -42,90 +40,91 @@
           </div>
         </div>
 
-        <div class="divider"></div>
+        <div class="h-px bg-white/[0.07]"></div>
 
         <!-- Audio Quality -->
-        <div class="setting-section">
-          <div class="section-info">
-            <h3 class="section-title">
-              <app-icon name="headphones" [size]="16" class="section-icon" />
+        <div class="flex flex-col gap-3.5">
+          <div>
+            <h3 class="flex items-center gap-2.5 text-sm font-bold text-white">
+              <app-icon name="headphones" [size]="18" class="text-[#fa2d48]" />
               <span>Calidad de Audio Predeterminada</span>
             </h3>
-            <p>Selecciona la tasa de bits (bitrate) preferida para las descargas de YouTube.</p>
+            <p class="text-xs text-zinc-400 mt-1 leading-relaxed">Selecciona la tasa de bits (bitrate) preferida para las descargas de YouTube.</p>
           </div>
 
-          <div class="quality-grid">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             @for (q of qualityOptions; track q.value) {
-              <label class="quality-option glass-card" [class.selected]="selectedQuality === q.value">
+              <label 
+                class="flex items-center gap-3 p-3.5 rounded-xl border border-white/[0.08] bg-[#181824] hover:bg-[#202030] hover:border-white/[0.18] cursor-pointer transition-colors shadow-sm"
+                [class.!border-[#fa2d48]]="selectedQuality === q.value"
+                [class.!bg-[#fa2d48]/[0.08]]="selectedQuality === q.value">
                 <input 
                   type="radio" 
                   name="quality" 
                   [value]="q.value" 
                   [(ngModel)]="selectedQuality" 
+                  class="w-4 h-4 accent-[#fa2d48]"
                 />
-                <div class="option-meta">
-                  <span class="option-title">{{ q.label }}</span>
-                  <span class="option-desc">{{ q.desc }}</span>
+                <div class="flex flex-col">
+                  <span class="text-xs font-bold text-white">{{ q.label }}</span>
+                  <span class="text-[10.5px] text-zinc-400 mt-0.5">{{ q.desc }}</span>
                 </div>
               </label>
             }
           </div>
         </div>
 
-        <div class="divider"></div>
+        <div class="h-px bg-white/[0.07]"></div>
 
         <!-- Audio Normalization -->
-        <div class="setting-section">
-          <div class="section-info">
-            <h3 class="section-title">
-              <app-icon name="sliders" [size]="16" class="section-icon" />
+        <div class="flex flex-col gap-3.5">
+          <div>
+            <h3 class="flex items-center gap-2.5 text-sm font-bold text-white">
+              <app-icon name="sliders" [size]="18" class="text-[#fa2d48]" />
               <span>Normalización de Volumen (FFmpeg Loudnorm)</span>
             </h3>
-            <p>Estandariza el volumen de todas las pistas para evitar cambios bruscos al escuchar música (Estándar Apple Music / Spotify: -14 LUFS).</p>
+            <p class="text-xs text-zinc-400 mt-1 leading-relaxed">Estandariza el volumen de todas las pistas para evitar cambios bruscos al escuchar música (Estándar Apple Music / Spotify: -14 LUFS).</p>
           </div>
 
-          <div class="normalization-box">
-            <div class="slider-row">
+          <div class="flex flex-col gap-2.5 p-4 rounded-xl border border-white/[0.08] bg-[#181824]">
+            <div class="flex items-center gap-4">
               <input 
                 type="range" 
                 min="-24" 
                 max="-9" 
                 step="0.5" 
                 [(ngModel)]="normalizeLufs" 
-                class="lufs-slider" 
+                class="flex-1 h-1.5 accent-[#fa2d48] cursor-pointer" 
               />
-              <span class="lufs-value">{{ normalizeLufs }} LUFS</span>
+              <span class="text-xs font-bold text-white min-w-[70px] text-right tabular-nums">{{ normalizeLufs }} LUFS</span>
             </div>
-            <span class="lufs-hint">Recomendado: -14.0 LUFS para una dinámica balanceada.</span>
+            <span class="text-[11px] text-zinc-500 font-medium">Recomendado: -14.0 LUFS para una dinámica balanceada.</span>
           </div>
         </div>
 
-        <div class="divider"></div>
+        <div class="h-px bg-white/[0.07]"></div>
 
         <!-- Auto Tagging -->
-        <div class="setting-section">
-          <div class="section-info">
-            <h3 class="section-title">
-              <app-icon name="sparkles" [size]="16" class="section-icon" />
+        <div class="flex flex-col gap-3.5">
+          <div>
+            <h3 class="flex items-center gap-2.5 text-sm font-bold text-white">
+              <app-icon name="sparkles" [size]="18" class="text-[#fa2d48]" />
               <span>Enriquecimiento Automático de Metadatos</span>
             </h3>
-            <p>Consulta automáticamente a Apple iTunes Search API para descargar e incrustar carátulas de 1000x1000 y etiquetas oficiales.</p>
+            <p class="text-xs text-zinc-400 mt-1 leading-relaxed">Consulta automáticamente a Apple iTunes Search API para descargar e incrustar carátulas de 1000x1000 y etiquetas oficiales.</p>
           </div>
 
-          <label class="checkbox-label">
-            <input type="checkbox" [(ngModel)]="autoTag" class="checkbox-input" />
+          <label class="flex items-center gap-3 cursor-pointer text-xs font-semibold text-white">
+            <input type="checkbox" [(ngModel)]="autoTag" class="w-4 h-4 accent-[#fa2d48] cursor-pointer" />
             <span>Habilitar búsqueda automática en iTunes</span>
           </label>
         </div>
 
         <!-- Actions -->
-        <div class="card-footer">
+        <div class="flex justify-end pt-3 border-t border-white/[0.08]">
           <button
-            tuiButton
             type="button"
-            appearance="primary"
-            size="m"
-            class="save-btn"
+            class="btn-primary"
             (click)="saveSettings()"
             [disabled]="isSaving()"
           >

@@ -8,7 +8,6 @@ import { ToastContainerComponent } from './shared/components/toast-container/toa
 
 @Component({
   selector: 'app-root',
-  standalone: true,
   imports: [
     CommonModule,
     RouterOutlet,
@@ -17,7 +16,6 @@ import { ToastContainerComponent } from './shared/components/toast-container/toa
     BottomPlayerComponent,
     ToastContainerComponent
   ],
-  templateUrl: './app.html',
-  styleUrls: ['./app.css']
+  templateUrl: './app.html'
 })
 export class App {}

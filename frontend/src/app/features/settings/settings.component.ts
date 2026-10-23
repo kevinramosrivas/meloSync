@@ -1,7 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TuiButton } from '@taiga-ui/core';
 import { SettingsApiService } from '../../data/settings-api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AppSettings, AudioQuality } from '../../domain/models';
@@ -9,10 +8,8 @@ import { IconComponent } from '../../shared/components/icon/icon.component';
 
 @Component({
   selector: 'app-settings',
-  standalone: true,
-  imports: [CommonModule, FormsModule, TuiButton, IconComponent],
-  templateUrl: './settings.component.html',
-  styleUrl: './settings.component.css'
+  imports: [CommonModule, FormsModule, IconComponent],
+  templateUrl: './settings.component.html'
 })
 export class SettingsComponent implements OnInit {
   private settingsApi = inject(SettingsApiService);

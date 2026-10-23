@@ -1,9 +1,9 @@
-<div class="progress-container" [style.height.px]="height()">
+<div class="w-full overflow-hidden rounded-full bg-white/[0.08]" [style.height.px]="height()">
   <progress
     tuiProgressBar
     [value]="percent()"
     [max]="100"
-    class="progress-bar-element"
-    [class.is-indeterminate]="indeterminate()"
+    class="block h-full w-full accent-[#fa2d48]"
+    [class.animate-pulse]="indeterminate()"
   ></progress>
 </div>

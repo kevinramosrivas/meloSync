@@ -5,10 +5,8 @@ import { DownloadStatus } from '../../../domain/models';
 
 @Component({
   selector: 'app-status-badge',
-  standalone: true,
   imports: [CommonModule, TuiBadge],
-  templateUrl: './status-badge.component.html',
-  styleUrl: './status-badge.component.css'
+  templateUrl: './status-badge.component.html'
 })
 export class StatusBadgeComponent {
   status = input.required<DownloadStatus>();

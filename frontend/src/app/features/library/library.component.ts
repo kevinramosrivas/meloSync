@@ -1,7 +1,6 @@
 import { Component, inject, signal, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TuiButton } from '@taiga-ui/core';
 import { LibraryApiService } from '../../data/library-api.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { WebSocketService } from '../../core/services/websocket.service';
@@ -14,10 +13,8 @@ import { IconComponent } from '../../shared/components/icon/icon.component';
 
 @Component({
   selector: 'app-library',
-  standalone: true,
-  imports: [CommonModule, FormsModule, DurationPipe, MetadataDialogComponent, TuiButton, IconComponent],
-  templateUrl: './library.component.html',
-  styleUrl: './library.component.css'
+  imports: [CommonModule, FormsModule, DurationPipe, MetadataDialogComponent, IconComponent],
+  templateUrl: './library.component.html'
 })
 export class LibraryComponent implements OnInit {
   private libraryApi = inject(LibraryApiService);

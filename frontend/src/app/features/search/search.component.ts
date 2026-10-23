@@ -2,7 +2,6 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { TuiButton } from '@taiga-ui/core';
 import { SearchApiService } from '../../data/search-api.service';
 import { DownloadsApiService } from '../../data/downloads-api.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -11,10 +10,8 @@ import { IconComponent } from '../../shared/components/icon/icon.component';
 
 @Component({
   selector: 'app-search',
-  standalone: true,
-  imports: [CommonModule, FormsModule, TuiButton, IconComponent],
-  templateUrl: './search.component.html',
-  styleUrl: './search.component.css'
+  imports: [CommonModule, FormsModule, IconComponent],
+  templateUrl: './search.component.html'
 })
 export class SearchComponent {
   private searchApi = inject(SearchApiService);
