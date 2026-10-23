@@ -1,9 +1,11 @@
+import { describe, beforeEach, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { appConfig } from './app.config';
 import { App } from './app';
 
 // Polyfill window.matchMedia for jsdom / Vitest environment
-Object.defineProperty(window, 'matchMedia', {
+const targetWindow = typeof window !== 'undefined' ? window : (globalThis as unknown as Window);
+Object.defineProperty(targetWindow, 'matchMedia', {
   writable: true,
   value: (query: string) => ({
     matches: false,

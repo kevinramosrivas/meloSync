@@ -1,60 +1,196 @@
-<aside class="flex flex-col h-full w-full p-4.5 justify-between">
-  <div class="flex flex-col gap-6">
-    <!-- App Brand / Logo -->
-    <div class="flex items-center gap-3 px-2 pt-2 pb-1">
-      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#fa2d48] to-[#ff4d64] shadow-md shadow-[#fa2d48]/30">
-        <app-icon name="music" [size]="22" class="text-white" />
+<aside 
+  class="flex flex-col h-full w-full justify-between p-3 select-none overflow-hidden transition-all duration-200"
+>
+  <div class="flex flex-col gap-3">
+    <!-- Header Row (Fixed 48px Height, Zero Vertical Layout Shift) -->
+    <div 
+      class="flex items-center h-12 w-full transition-all duration-200 min-w-0"
+      [class.justify-between]="!isCollapsed()"
+      [class.justify-center]="isCollapsed()"
+    >
+      <!-- Logo + App Name (Expanded, Single Line Premium Typography) -->
+      <div 
+        class="flex items-center gap-2.5 min-w-0 cursor-pointer group overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+        [class.max-w-0]="isCollapsed()"
+        [class.opacity-0]="isCollapsed()"
+        [class.max-w-[150px]]="!isCollapsed()"
+        [class.opacity-100]="!isCollapsed()"
+        (click)="toggleCollapse()"
+        title="Colapsar barra lateral"
+      >
+        <img 
+          src="/logo.svg" 
+          alt="meloSync" 
+          class="h-7 w-7 shrink-0 object-contain drop-shadow-[0_2px_10px_rgba(250,45,72,0.35)] transition-transform duration-150 group-hover:scale-105 active:scale-95" 
+        />
+        <span class="text-[16px] font-bold tracking-tight text-white whitespace-nowrap">
+          meloSync
+        </span>
       </div>
-      <div class="flex flex-col">
-        <span class="text-[17px] font-extrabold tracking-tight bg-gradient-to-r from-white via-white to-zinc-300 bg-clip-text text-transparent leading-none">meloSync</span>
-        <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mt-1">Music Manager</span>
-      </div>
+
+      <!-- Toggle Button (Acts as Header Button in Expanded, and Primary Centered Expand Button in Collapsed) -->
+      <button
+        type="button"
+        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-150 cursor-pointer active:scale-90"
+        [class.bg-white/[0.06]]="isCollapsed()"
+        [class.border]="isCollapsed()"
+        [class.border-white/[0.08]]="isCollapsed()"
+        [class.hover:bg-white/[0.12]]="isCollapsed()"
+        [class.text-zinc-300]="isCollapsed()"
+        [class.text-zinc-400]="!isCollapsed()"
+        [class.hover:text-white]="true"
+        [class.hover:bg-white/[0.08]]="!isCollapsed()"
+        (click)="toggleCollapse()"
+        [title]="isCollapsed() ? 'Expandir barra lateral (Ctrl+B)' : 'Colapsar barra lateral (Ctrl+B)'"
+      >
+        <app-icon name="panel-left" [size]="18" />
+      </button>
     </div>
 
-    <!-- Navigation Links -->
-    <nav class="flex flex-col gap-1.5 px-1">
-      <div class="px-3 pb-1 pt-1 text-[10.5px] font-bold uppercase tracking-widest text-zinc-500">Explorar</div>
-
-      <a routerLink="/search" routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" class="group flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium text-zinc-400 transition-all hover:bg-white/[0.06] hover:text-white">
-        <app-icon name="search" [size]="18" class="nav-icon text-zinc-400 group-hover:text-white transition-colors" />
-        <span class="flex-1">Buscar</span>
+    <!-- Clean Industry-Standard Navigation (Fixed Y-positions, Tactile Micro-Interactions) -->
+    <nav class="flex flex-col gap-1 w-full">
+      <!-- Link: Buscar -->
+      <a 
+        routerLink="/search" 
+        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" 
+        class="group relative flex items-center h-10 w-full rounded-xl text-[13.5px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer overflow-hidden"
+        [class.px-3]="!isCollapsed()"
+        [class.justify-center]="isCollapsed()"
+        title="Buscar"
+      >
+        <app-icon name="search" [size]="19" class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
+        <span 
+          class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          [class.max-w-0]="isCollapsed()"
+          [class.opacity-0]="isCollapsed()"
+          [class.ml-0]="isCollapsed()"
+          [class.max-w-[140px]]="!isCollapsed()"
+          [class.opacity-100]="!isCollapsed()"
+          [class.ml-3]="!isCollapsed()"
+        >
+          Buscar
+        </span>
       </a>
 
-      <a routerLink="/downloads" routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" class="group flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium text-zinc-400 transition-all hover:bg-white/[0.06] hover:text-white">
-        <app-icon name="download" [size]="18" class="nav-icon text-zinc-400 group-hover:text-white transition-colors" />
-        <span class="flex-1">Descargas</span>
+      <!-- Link: Descargas -->
+      <a 
+        routerLink="/downloads" 
+        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" 
+        class="group relative flex items-center h-10 w-full rounded-xl text-[13.5px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer overflow-hidden"
+        [class.px-3]="!isCollapsed()"
+        [class.justify-center]="isCollapsed()"
+        title="Descargas"
+      >
+        <app-icon name="download" [size]="19" class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
+        <span 
+          class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          [class.max-w-0]="isCollapsed()"
+          [class.opacity-0]="isCollapsed()"
+          [class.ml-0]="isCollapsed()"
+          [class.max-w-[140px]]="!isCollapsed()"
+          [class.opacity-100]="!isCollapsed()"
+          [class.ml-3]="!isCollapsed()"
+        >
+          Descargas
+        </span>
+
         @if (activeProgress()) {
-          <span class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-zinc-950 shadow-sm">1</span>
+          <span 
+            class="ml-auto overflow-hidden whitespace-nowrap transition-all duration-200 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-zinc-950 shadow-sm"
+            [class.hidden]="isCollapsed()"
+          >
+            1
+          </span>
+          <span 
+            class="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-white shadow-sm ring-2 ring-[#0c0c11]"
+            [class.hidden]="!isCollapsed()"
+          ></span>
         }
       </a>
 
-      <a routerLink="/library" routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" class="group flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium text-zinc-400 transition-all hover:bg-white/[0.06] hover:text-white">
-        <app-icon name="library" [size]="18" class="nav-icon text-zinc-400 group-hover:text-white transition-colors" />
-        <span class="flex-1">Biblioteca</span>
+      <!-- Link: Biblioteca -->
+      <a 
+        routerLink="/library" 
+        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" 
+        class="group relative flex items-center h-10 w-full rounded-xl text-[13.5px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer overflow-hidden"
+        [class.px-3]="!isCollapsed()"
+        [class.justify-center]="isCollapsed()"
+        title="Biblioteca"
+      >
+        <app-icon name="library" [size]="19" class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
+        <span 
+          class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          [class.max-w-0]="isCollapsed()"
+          [class.opacity-0]="isCollapsed()"
+          [class.ml-0]="isCollapsed()"
+          [class.max-w-[140px]]="!isCollapsed()"
+          [class.opacity-100]="!isCollapsed()"
+          [class.ml-3]="!isCollapsed()"
+        >
+          Biblioteca
+        </span>
       </a>
 
-      <div class="px-3 pb-1 pt-4 text-[10.5px] font-bold uppercase tracking-widest text-zinc-500">Configuración</div>
+      <!-- Persistent Subtle Divider (Matches in both states) -->
+      <div class="h-[1px] bg-white/[0.06] my-1.5 w-full"></div>
 
-      <a routerLink="/settings" routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" class="group flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium text-zinc-400 transition-all hover:bg-white/[0.06] hover:text-white">
-        <app-icon name="settings" [size]="18" class="nav-icon text-zinc-400 group-hover:text-white transition-colors" />
-        <span class="flex-1">Ajustes</span>
+      <!-- Link: Ajustes -->
+      <a 
+        routerLink="/settings" 
+        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" 
+        class="group relative flex items-center h-10 w-full rounded-xl text-[13.5px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer overflow-hidden"
+        [class.px-3]="!isCollapsed()"
+        [class.justify-center]="isCollapsed()"
+        title="Ajustes"
+      >
+        <app-icon name="settings" [size]="19" class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
+        <span 
+          class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          [class.max-w-0]="isCollapsed()"
+          [class.opacity-0]="isCollapsed()"
+          [class.ml-0]="isCollapsed()"
+          [class.max-w-[140px]]="!isCollapsed()"
+          [class.opacity-100]="!isCollapsed()"
+          [class.ml-3]="!isCollapsed()"
+        >
+          Ajustes
+        </span>
       </a>
     </nav>
   </div>
 
-  <!-- Sidebar Footer (Status & Quick Action) -->
-  <div class="flex flex-col gap-3.5 border-t border-white/[0.08] pt-4 px-1">
+  <!-- Sidebar Footer: Abrir Carpeta & Conexión WebSocket -->
+  <div class="flex flex-col gap-3 border-t border-white/[0.08] pt-3 transition-all duration-200">
     <button
       type="button"
-      class="btn-secondary w-full justify-start text-xs rounded-xl"
+      class="flex items-center h-10 w-full rounded-xl transition-all duration-150 cursor-pointer overflow-hidden border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] text-zinc-300 hover:text-white"
+      [class.px-3]="!isCollapsed()"
+      [class.justify-center]="isCollapsed()"
       (click)="openMusicFolder()"
+      title="Abrir Carpeta de Música"
     >
-      <app-icon name="folder" [size]="16" />
-      <span>Abrir Carpeta</span>
+      <app-icon name="folder" [size]="17" class="shrink-0" />
+      <span 
+        class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] text-xs font-medium"
+        [class.max-w-0]="isCollapsed()"
+        [class.opacity-0]="isCollapsed()"
+        [class.ml-0]="isCollapsed()"
+        [class.max-w-[120px]]="!isCollapsed()"
+        [class.opacity-100]="!isCollapsed()"
+        [class.ml-2.5]="!isCollapsed()"
+      >
+        Abrir Carpeta
+      </span>
     </button>
 
-    <div class="flex items-center gap-2.5 px-2 text-[11.5px] text-zinc-400">
-      <span class="relative flex h-2 w-2">
+    <div 
+      class="flex items-center h-6 w-full transition-all duration-200"
+      [class.px-2]="!isCollapsed()"
+      [class.justify-start]="!isCollapsed()"
+      [class.justify-center]="isCollapsed()"
+      [title]="ws.isConnected() ? 'Servidor Conectado' : 'Conectando al servidor...'"
+    >
+      <span class="relative flex h-2 w-2 shrink-0">
         @if (ws.isConnected()) {
           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
           <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
@@ -62,7 +198,15 @@
           <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
         }
       </span>
-      <span>
+      <span 
+        class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] text-[11.5px] text-zinc-400"
+        [class.max-w-0]="isCollapsed()"
+        [class.opacity-0]="isCollapsed()"
+        [class.ml-0]="isCollapsed()"
+        [class.max-w-[150px]]="!isCollapsed()"
+        [class.opacity-100]="!isCollapsed()"
+        [class.ml-2.5]="!isCollapsed()"
+      >
         {{ ws.isConnected() ? 'Servidor Conectado' : 'Conectando...' }}
       </span>
     </div>

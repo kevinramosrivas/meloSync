@@ -120,6 +120,47 @@
           </label>
         </div>
 
+        <div class="h-px bg-white/[0.07]"></div>
+
+        <!-- Cover Art Cache & Storage Management -->
+        <div class="flex flex-col gap-3.5">
+          <div class="flex items-start justify-between flex-wrap gap-3">
+            <div>
+              <h3 class="flex items-center gap-2.5 text-sm font-bold text-white">
+                <app-icon name="disc" [size]="18" class="text-[#fa2d48]" />
+                <span>Almacenamiento y Caché de Carátulas</span>
+              </h3>
+              <p class="text-xs text-zinc-400 mt-1 leading-relaxed max-w-xl">
+                meloSync autogestiona la memoria mediante un algoritmo LRU (desalojo automático) acotado a un límite estricto para evitar acumulación desmedida de espacio. Puedes purgar la caché manualmente en cualquier momento.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="clearCoverCache()"
+              [disabled]="coverCache.stats().entryCount === 0"
+              title="Liberar carátulas en memoria"
+            >
+              <app-icon name="trash" [size]="15" />
+              <span>Vaciar Caché</span>
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between p-3.5 rounded-xl border border-white/[0.08] bg-[#181824] text-xs">
+            <div class="flex items-center gap-3">
+              <span class="flex h-2.5 w-2.5 rounded-full" [class.bg-emerald-500]="coverCache.stats().entryCount < coverCache.stats().maxEntries" [class.bg-amber-500]="coverCache.stats().entryCount >= coverCache.stats().maxEntries"></span>
+              <span class="text-zinc-300">
+                <strong class="text-white">{{ coverCache.stats().entryCount }}</strong> de {{ coverCache.stats().maxEntries }} carátulas en memoria
+              </span>
+            </div>
+            <div class="flex items-center gap-2 font-mono text-zinc-400">
+              <span>Uso estimado:</span>
+              <strong class="text-white font-semibold">{{ coverCache.stats().estimatedMemoryDisplay }}</strong>
+            </div>
+          </div>
+        </div>
+
         <!-- Actions -->
         <div class="flex justify-end pt-3 border-t border-white/[0.08]">
           <button

@@ -1,19 +1,34 @@
-import { Component, inject, signal, effect, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, signal, computed, effect, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LibraryApiService } from '../../data/library-api.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { WebSocketService } from '../../core/services/websocket.service';
 import { ToastService } from '../../core/services/toast.service';
+import { UserPreferencesService } from '../../core/services/user-preferences.service';
+import { ProximitySearchService } from '../../core/services/proximity-search.service';
+import { CoverCacheService } from '../../core/services/cover-cache.service';
+import {
+  LIBRARY_VIEW_MODES,
+  LibraryViewMode,
+  USER_PREFERENCE_KEYS
+} from '../../core/constants/preferences.constants';
 import { Track } from '../../domain/models';
 import { DurationPipe } from '../../shared/pipes/duration.pipe';
+import { CoverUrlPipe } from '../../shared/pipes/cover-url.pipe';
 import { MetadataDialogComponent } from '../metadata-editor/metadata-dialog.component';
-import { API_CONFIG } from '../../core/config/api.config';
 import { IconComponent } from '../../shared/components/icon/icon.component';
+import { EqualizerIndicatorComponent } from '../../shared/components/equalizer-indicator/equalizer-indicator.component';
 
 @Component({
   selector: 'app-library',
-  imports: [CommonModule, FormsModule, DurationPipe, MetadataDialogComponent, IconComponent],
+  imports: [
+    FormsModule,
+    DurationPipe,
+    CoverUrlPipe,
+    MetadataDialogComponent,
+    IconComponent,
+    EqualizerIndicatorComponent
+  ],
   templateUrl: './library.component.html'
 })
 export class LibraryComponent implements OnInit {
@@ -21,13 +36,35 @@ export class LibraryComponent implements OnInit {
   readonly player = inject(AudioPlayerService);
   private ws = inject(WebSocketService);
   private toast = inject(ToastService);
+  private preferences = inject(UserPreferencesService);
+  private proximitySearch = inject(ProximitySearchService);
+  private coverCache = inject(CoverCacheService);
+
+  readonly viewModes = LIBRARY_VIEW_MODES;
 
   readonly tracks = signal<Track[]>([]);
   readonly isLoading = signal<boolean>(false);
   readonly isSyncing = signal<boolean>(false);
-  filterQuery = '';
+  readonly searchQuery = signal<string>('');
+
+  // Compatibility getter/setter for template bindings
+  get filterQuery(): string {
+    return this.searchQuery();
+  }
+  set filterQuery(value: string) {
+    this.searchQuery.set(value);
+  }
+
+  readonly viewMode = this.preferences.libraryViewMode;
+
+  // Lazy render the cards DOM subtree only when first needed
+  readonly hasRenderedCards = signal<boolean>(this.viewMode() === LIBRARY_VIEW_MODES.GRID);
 
   readonly selectedTrackForEdit = signal<Track | null>(null);
+
+  readonly filteredTracks = computed(() => {
+    return this.proximitySearch.searchTracks(this.tracks(), this.searchQuery());
+  });
 
   constructor() {
     // Automatically reload library whenever WebSocket signals an update
@@ -46,6 +83,13 @@ export class LibraryComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadLibrary();
+  }
+
+  setViewMode(mode: LibraryViewMode): void {
+    if (mode === LIBRARY_VIEW_MODES.GRID) {
+      this.hasRenderedCards.set(true);
+    }
+    this.preferences.set(USER_PREFERENCE_KEYS.LIBRARY_VIEW_MODE, mode);
   }
 
   loadLibrary(retryCount = 0): void {
@@ -79,28 +123,20 @@ export class LibraryComponent implements OnInit {
     });
   }
 
-  filteredTracks(): Track[] {
-    const q = this.filterQuery.toLowerCase().trim();
-    if (!q) return this.tracks();
-    return this.tracks().filter(t =>
-      t.display_title.toLowerCase().includes(q) ||
-      t.display_artist.toLowerCase().includes(q) ||
-      t.display_album.toLowerCase().includes(q)
-    );
-  }
-
   getCoverUrl(track: Track): string | null {
-    if (track.metadata?.has_cover_bytes) {
-      return `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.cover(track.id)}?t=${track.updated_at_iso || ''}`;
-    }
-    if (track.metadata?.cover_url) {
-      return track.metadata.cover_url;
-    }
-    return null;
+    return this.coverCache.getCoverUrl(track);
   }
 
   play(track: Track): void {
     this.player.playTrack(track, this.filteredTracks());
+  }
+
+  togglePlayTrack(track: Track): void {
+    if (this.player.currentTrack()?.id === track.id) {
+      this.player.togglePlay();
+    } else {
+      this.play(track);
+    }
   }
 
   openFolder(trackId: string): void {
@@ -115,7 +151,9 @@ export class LibraryComponent implements OnInit {
   }
 
   onTrackMetadataUpdated(updatedTrack: Track): void {
-    this.tracks.update(list => list.map(t => t.id === updatedTrack.id ? updatedTrack : t));
+    // Invalidate the cover cache entry immediately so updated cover displays instantly
+    this.coverCache.invalidate(updatedTrack.id);
+    this.tracks.update((list) => list.map((t) => (t.id === updatedTrack.id ? updatedTrack : t)));
   }
 
   deleteTrack(track: Track): void {
@@ -123,7 +161,8 @@ export class LibraryComponent implements OnInit {
       this.libraryApi.deleteTrack(track.id, true).subscribe({
         next: () => {
           this.toast.success('Pista eliminada');
-          this.tracks.update(list => list.filter(t => t.id !== track.id));
+          this.coverCache.invalidate(track.id);
+          this.tracks.update((list) => list.filter((t) => t.id !== track.id));
         },
         error: (e) => this.toast.error('Error al eliminar pista', e.error?.detail || 'No se pudo eliminar la pista.')
       });
