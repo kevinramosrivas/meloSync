@@ -1,8 +1,8 @@
-import { Component, inject, signal, computed, effect, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LibraryApiService } from '../../data/library-api.service';
+import { LibraryStore } from '../../core/stores/library.store';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
-import { WebSocketService } from '../../core/services/websocket.service';
 import { ToastService } from '../../core/services/toast.service';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
 import { ProximitySearchService } from '../../core/services/proximity-search.service';
@@ -36,18 +36,21 @@ import { TrackRowComponent } from '../../shared/components/track-row/track-row.c
   templateUrl: './library.component.html'
 })
 export class LibraryComponent implements OnInit {
-  private libraryApi = inject(LibraryApiService);
+  private readonly libraryApi = inject(LibraryApiService);
+  private readonly libraryStore = inject(LibraryStore);
   readonly player = inject(AudioPlayerService);
-  private ws = inject(WebSocketService);
-  private toast = inject(ToastService);
-  private preferences = inject(UserPreferencesService);
-  private proximitySearch = inject(ProximitySearchService);
-  private coverCache = inject(CoverCacheService);
+  private readonly toast = inject(ToastService);
+  private readonly preferences = inject(UserPreferencesService);
+  private readonly proximitySearch = inject(ProximitySearchService);
+  private readonly coverCache = inject(CoverCacheService);
 
   readonly viewModes = LIBRARY_VIEW_MODES;
 
-  readonly tracks = signal<Track[]>([]);
-  readonly isLoading = signal<boolean>(false);
+  readonly tracks = this.libraryStore.tracks;
+  readonly isLoading = this.libraryStore.isLoading;
+  readonly isInitialLoading = this.libraryStore.isInitialLoading;
+  readonly connectionFailed = this.libraryStore.connectionFailed;
+
   readonly isSyncing = signal<boolean>(false);
   readonly searchQuery = signal<string>('');
 
@@ -78,23 +81,8 @@ export class LibraryComponent implements OnInit {
     return this.proximitySearch.searchTracks(this.tracks(), this.searchQuery());
   });
 
-  constructor() {
-    // Automatically reload library whenever WebSocket signals an update
-    effect(() => {
-      this.ws.libraryUpdated();
-      this.loadLibrary();
-    });
-
-    // Reload library when WebSocket connects (handles sidecar boot delay)
-    effect(() => {
-      if (this.ws.isConnected()) {
-        this.loadLibrary();
-      }
-    });
-  }
-
   ngOnInit(): void {
-    this.loadLibrary();
+    this.libraryStore.load(false);
   }
 
   setViewMode(mode: LibraryViewMode): void {
@@ -105,19 +93,7 @@ export class LibraryComponent implements OnInit {
   }
 
   loadLibrary(retryCount = 0): void {
-    this.isLoading.set(true);
-    this.libraryApi.getLibrary('COMPLETADA').subscribe({
-      next: (data) => {
-        this.tracks.set(data);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.isLoading.set(false);
-        if (retryCount < 2) {
-          setTimeout(() => this.loadLibrary(retryCount + 1), 1500);
-        }
-      }
-    });
+    this.libraryStore.load(true, retryCount);
   }
 
   syncLibrary(): void {
@@ -126,7 +102,7 @@ export class LibraryComponent implements OnInit {
       next: (res) => {
         this.isSyncing.set(false);
         this.toast.success('Biblioteca Sincronizada', res.message);
-        this.loadLibrary();
+        this.libraryStore.load(true);
       },
       error: (e) => {
         this.isSyncing.set(false);
@@ -178,9 +154,8 @@ export class LibraryComponent implements OnInit {
   }
 
   onTrackMetadataUpdated(updatedTrack: Track): void {
-    // Invalidate the cover cache entry immediately so updated cover displays instantly
     this.coverCache.invalidate(updatedTrack.id);
-    this.tracks.update((list) => list.map((t) => (t.id === updatedTrack.id ? updatedTrack : t)));
+    this.libraryStore.updateTrackInMemory(updatedTrack);
   }
 
   deleteTrack(track: Track): void {
@@ -189,7 +164,7 @@ export class LibraryComponent implements OnInit {
         next: () => {
           this.toast.success('Pista eliminada');
           this.coverCache.invalidate(track.id);
-          this.tracks.update((list) => list.filter((t) => t.id !== track.id));
+          this.libraryStore.removeTrackFromMemory(track.id);
         },
         error: (e) => this.toast.error('Error al eliminar pista', e.error?.detail || 'No se pudo eliminar la pista.')
       });

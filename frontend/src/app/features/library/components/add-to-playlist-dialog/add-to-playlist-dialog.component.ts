@@ -1,6 +1,7 @@
 import { Component, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PlaylistsApiService } from '../../../../data/playlists-api.service';
+import { PlaylistsStore } from '../../../../core/stores/playlists.store';
 import { PlaylistSummary, Track } from '../../../../domain/models';
 import { ToastService } from '../../../../core/services/toast.service';
 import { IconComponent } from '../../../../shared/components/icon/icon.component';
@@ -150,14 +151,15 @@ import { IconComponent } from '../../../../shared/components/icon/icon.component
 })
 export class AddToPlaylistDialogComponent {
   private readonly playlistsApi = inject(PlaylistsApiService);
+  private readonly playlistsStore = inject(PlaylistsStore);
   private readonly toast = inject(ToastService);
 
   readonly isOpen = input<boolean>(false);
   readonly track = input<Track | null>(null);
   readonly close = output<void>();
 
-  readonly userPlaylists = signal<PlaylistSummary[]>([]);
-  readonly isLoading = signal(false);
+  readonly userPlaylists = this.playlistsStore.userPlaylists;
+  readonly isLoading = this.playlistsStore.isLoading;
   readonly isAdding = signal(false);
   readonly showCreateForm = signal(false);
   readonly newPlaylistName = signal('');
@@ -165,24 +167,10 @@ export class AddToPlaylistDialogComponent {
   constructor() {
     effect(() => {
       if (this.isOpen()) {
-        this.loadPlaylists();
+        this.playlistsStore.load(false);
         this.showCreateForm.set(false);
         this.newPlaylistName.set('');
       }
-    });
-  }
-
-  loadPlaylists(): void {
-    this.isLoading.set(true);
-    this.playlistsApi.getPlaylists().subscribe({
-      next: (resp) => {
-        this.userPlaylists.set(resp.user_playlists);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.isLoading.set(false);
-        this.toast.error('Error al cargar listas', 'No se pudieron recuperar las playlists del usuario.');
-      },
     });
   }
 
@@ -194,6 +182,7 @@ export class AddToPlaylistDialogComponent {
     this.playlistsApi.addTrackToPlaylist(playlist.id, t.id).subscribe({
       next: () => {
         this.isAdding.set(false);
+        this.playlistsStore.load(true);
         this.toast.success(
           'Canción añadida',
           `"${t.display_title}" fue agregada a "${playlist.name}".`
@@ -218,11 +207,13 @@ export class AddToPlaylistDialogComponent {
         this.playlistsApi.addTrackToPlaylist(created.id, t.id).subscribe({
           next: () => {
             this.isAdding.set(false);
+            this.playlistsStore.load(true);
             this.toast.success('Lista creada', `"${t.display_title}" fue añadida a "${created.name}".`);
             this.onClose();
           },
           error: () => {
             this.isAdding.set(false);
+            this.playlistsStore.load(true);
             this.onClose();
           },
         });

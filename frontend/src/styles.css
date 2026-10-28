@@ -94,6 +94,11 @@
       grid-template-columns: 44px minmax(0, 3fr) minmax(140px, 2fr) minmax(110px, 1.2fr) 65px 96px;
     }
   }
+
+  .track-row-virtual {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 56px;
+  }
 }
 
 @keyframes fadeIn {

@@ -10,6 +10,9 @@ import { DurationPipe } from '../../pipes/duration.pipe';
   selector: 'app-track-row',
   imports: [IconComponent, EqualizerIndicatorComponent, CoverUrlPipe, DurationPipe],
   templateUrl: './track-row.component.html',
+  host: {
+    class: 'track-row-virtual block',
+  },
 })
 export class TrackRowComponent {
   readonly player = inject(AudioPlayerService);

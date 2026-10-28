@@ -1,6 +1,7 @@
 import { Component, OnInit, computed, effect, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { PlaylistsApiService } from '../../../data/playlists-api.service';
+import { PlaylistsStore } from '../../../core/stores/playlists.store';
 import { LibraryApiService } from '../../../data/library-api.service';
 import { Playlist, Track } from '../../../domain/models';
 import { AudioPlayerService } from '../../../core/services/audio-player.service';
@@ -25,6 +26,7 @@ import { TrackRowComponent } from '../../../shared/components/track-row/track-ro
 })
 export class PlaylistDetailComponent implements OnInit {
   private readonly playlistsApi = inject(PlaylistsApiService);
+  private readonly playlistsStore = inject(PlaylistsStore);
   private readonly libraryApi = inject(LibraryApiService);
   readonly player = inject(AudioPlayerService);
   private readonly router = inject(Router);
@@ -143,6 +145,7 @@ export class PlaylistDetailComponent implements OnInit {
     this.playlistsApi.removeTrackFromPlaylist(p.id, track.id).subscribe({
       next: (updated) => {
         this.playlist.set(updated);
+        this.playlistsStore.load(true);
         this.toast.success('Pista eliminada', `"${track.display_title}" fue quitada de la lista.`);
       },
       error: () => {
@@ -171,6 +174,7 @@ export class PlaylistDetailComponent implements OnInit {
     this.playlistsApi.updatePlaylist(p.id, { name: payload.name, description: payload.description }).subscribe({
       next: (updated) => {
         this.playlist.set(updated);
+        this.playlistsStore.load(true);
         this.toast.success('Lista actualizada', 'Los cambios han sido guardados.');
       },
       error: () => {
@@ -187,6 +191,7 @@ export class PlaylistDetailComponent implements OnInit {
 
     this.playlistsApi.deletePlaylist(p.id).subscribe({
       next: () => {
+        this.playlistsStore.load(true);
         this.toast.success('Lista eliminada', `"${p.name}" fue eliminada.`);
         this.router.navigate(['/playlists']);
       },

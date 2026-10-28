@@ -1,48 +1,28 @@
-<aside 
-  class="flex flex-col h-full w-full justify-between p-3 select-none overflow-hidden transition-all duration-200"
->
+<aside class="flex flex-col h-full w-full justify-between p-3 select-none overflow-hidden transition-all duration-200">
   <div class="flex flex-col gap-3">
     <!-- Header Row (Fixed 48px Height, Zero Vertical Layout Shift) -->
-    <div 
-      class="flex items-center h-12 w-full transition-all duration-200 min-w-0"
-      [class.justify-between]="!isCollapsed()"
-      [class.justify-center]="isCollapsed()"
-    >
+    <div class="flex items-center h-12 w-full transition-all duration-200 min-w-0"
+      [class.justify-between]="!isCollapsed()" [class.justify-center]="isCollapsed()">
       <!-- Logo + App Name (Expanded, Single Line Premium Typography) -->
-      <div 
+      <div
         class="flex items-center gap-2.5 min-w-0 cursor-pointer group overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
-        [class.max-w-0]="isCollapsed()"
-        [class.opacity-0]="isCollapsed()"
-        [class.max-w-[150px]]="!isCollapsed()"
-        [class.opacity-100]="!isCollapsed()"
-        (click)="toggleCollapse()"
-        title="Colapsar barra lateral"
-      >
-        <img 
-          src="/logo.svg" 
-          alt="meloSync" 
-          class="h-7 w-7 shrink-0 object-contain drop-shadow-[0_2px_10px_rgba(250,45,72,0.35)] transition-transform duration-150 group-hover:scale-105 active:scale-95" 
-        />
+        [class.max-w-0]="isCollapsed()" [class.opacity-0]="isCollapsed()" [class.max-w-[150px]]="!isCollapsed()"
+        [class.opacity-100]="!isCollapsed()" (click)="toggleCollapse()" title="Colapsar barra lateral">
+        <img src="/logo.svg" alt="meloSync"
+          class="h-7 w-7 shrink-0 object-contain drop-shadow-[0_2px_10px_rgba(250,45,72,0.35)] transition-transform duration-150 group-hover:scale-105 active:scale-95" />
         <span class="text-[16px] font-bold tracking-tight text-white whitespace-nowrap">
           meloSync
         </span>
       </div>
 
       <!-- Toggle Button (Acts as Header Button in Expanded, and Primary Centered Expand Button in Collapsed) -->
-      <button
-        type="button"
+      <button type="button"
         class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-150 cursor-pointer active:scale-90"
-        [class.bg-white/[0.06]]="isCollapsed()"
-        [class.border]="isCollapsed()"
-        [class.border-white/[0.08]]="isCollapsed()"
-        [class.hover:bg-white/[0.12]]="isCollapsed()"
-        [class.text-zinc-300]="isCollapsed()"
-        [class.text-zinc-400]="!isCollapsed()"
-        [class.hover:text-white]="true"
-        [class.hover:bg-white/[0.08]]="!isCollapsed()"
-        (click)="toggleCollapse()"
-        [title]="isCollapsed() ? 'Expandir barra lateral (Ctrl+B)' : 'Colapsar barra lateral (Ctrl+B)'"
-      >
+        [class.bg-white/[0.06]]="isCollapsed()" [class.border]="isCollapsed()"
+        [class.border-white/[0.08]]="isCollapsed()" [class.hover:bg-white/[0.12]]="isCollapsed()"
+        [class.text-zinc-300]="isCollapsed()" [class.text-zinc-400]="!isCollapsed()" [class.hover:text-white]="true"
+        [class.hover:bg-white/[0.08]]="!isCollapsed()" (click)="toggleCollapse()"
+        [title]="isCollapsed() ? 'Expandir barra lateral (Ctrl+B)' : 'Colapsar barra lateral (Ctrl+B)'">
         <app-icon name="panel-left" [size]="18" />
       </button>
     </div>
@@ -50,106 +30,67 @@
     <!-- Clean Industry-Standard Navigation (Fixed Y-positions, Tactile Micro-Interactions) -->
     <nav class="flex flex-col gap-1 w-full">
       <!-- Link: Buscar -->
-      <a 
-        routerLink="/search" 
-        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" 
+      <a routerLink="/search"
+        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white"
         class="group relative flex items-center h-10 w-full rounded-xl text-[13.5px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer overflow-hidden"
-        [class.px-3]="!isCollapsed()"
-        [class.justify-center]="isCollapsed()"
-        title="Buscar"
-      >
-        <app-icon name="search" [size]="19" class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
-        <span 
-          class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
-          [class.max-w-0]="isCollapsed()"
-          [class.opacity-0]="isCollapsed()"
-          [class.ml-0]="isCollapsed()"
-          [class.max-w-[140px]]="!isCollapsed()"
-          [class.opacity-100]="!isCollapsed()"
-          [class.ml-3]="!isCollapsed()"
-        >
+        [class.px-3]="!isCollapsed()" [class.justify-center]="isCollapsed()" title="Buscar">
+        <app-icon name="search" [size]="19"
+          class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
+        <span class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          [class.max-w-0]="isCollapsed()" [class.opacity-0]="isCollapsed()" [class.ml-0]="isCollapsed()"
+          [class.max-w-[140px]]="!isCollapsed()" [class.opacity-100]="!isCollapsed()" [class.ml-3]="!isCollapsed()">
           Buscar
         </span>
       </a>
 
       <!-- Link: Descargas -->
-      <a 
-        routerLink="/downloads" 
-        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" 
+      <a routerLink="/downloads"
+        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white"
         class="group relative flex items-center h-10 w-full rounded-xl text-[13.5px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer overflow-hidden"
-        [class.px-3]="!isCollapsed()"
-        [class.justify-center]="isCollapsed()"
-        title="Descargas"
-      >
-        <app-icon name="download" [size]="19" class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
-        <span 
-          class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
-          [class.max-w-0]="isCollapsed()"
-          [class.opacity-0]="isCollapsed()"
-          [class.ml-0]="isCollapsed()"
-          [class.max-w-[140px]]="!isCollapsed()"
-          [class.opacity-100]="!isCollapsed()"
-          [class.ml-3]="!isCollapsed()"
-        >
+        [class.px-3]="!isCollapsed()" [class.justify-center]="isCollapsed()" title="Descargas">
+        <app-icon name="download" [size]="19"
+          class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
+        <span class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          [class.max-w-0]="isCollapsed()" [class.opacity-0]="isCollapsed()" [class.ml-0]="isCollapsed()"
+          [class.max-w-[140px]]="!isCollapsed()" [class.opacity-100]="!isCollapsed()" [class.ml-3]="!isCollapsed()">
           Descargas
         </span>
 
         @if (activeProgress()) {
-          <span 
-            class="ml-auto overflow-hidden whitespace-nowrap transition-all duration-200 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-zinc-950 shadow-sm"
-            [class.hidden]="isCollapsed()"
-          >
-            1
-          </span>
-          <span 
-            class="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-white shadow-sm ring-2 ring-[#0c0c11]"
-            [class.hidden]="!isCollapsed()"
-          ></span>
+        <span
+          class="ml-auto overflow-hidden whitespace-nowrap transition-all duration-200 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-zinc-950 shadow-sm"
+          [class.hidden]="isCollapsed()">
+          1
+        </span>
+        <span class="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-white shadow-sm ring-2 ring-[#0c0c11]"
+          [class.hidden]="!isCollapsed()"></span>
         }
       </a>
 
       <!-- Link: Biblioteca -->
-      <a 
-        routerLink="/library" 
-        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" 
+      <a routerLink="/library"
+        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white"
         class="group relative flex items-center h-10 w-full rounded-xl text-[13.5px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer overflow-hidden"
-        [class.px-3]="!isCollapsed()"
-        [class.justify-center]="isCollapsed()"
-        title="Biblioteca"
-      >
-        <app-icon name="library" [size]="19" class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
-        <span 
-          class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
-          [class.max-w-0]="isCollapsed()"
-          [class.opacity-0]="isCollapsed()"
-          [class.ml-0]="isCollapsed()"
-          [class.max-w-[140px]]="!isCollapsed()"
-          [class.opacity-100]="!isCollapsed()"
-          [class.ml-3]="!isCollapsed()"
-        >
+        [class.px-3]="!isCollapsed()" [class.justify-center]="isCollapsed()" title="Biblioteca">
+        <app-icon name="library" [size]="19"
+          class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
+        <span class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          [class.max-w-0]="isCollapsed()" [class.opacity-0]="isCollapsed()" [class.ml-0]="isCollapsed()"
+          [class.max-w-[140px]]="!isCollapsed()" [class.opacity-100]="!isCollapsed()" [class.ml-3]="!isCollapsed()">
           Biblioteca
         </span>
       </a>
 
       <!-- Link: Playlists -->
-      <a 
-        routerLink="/playlists" 
-        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" 
+      <a routerLink="/playlists"
+        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white"
         class="group relative flex items-center h-10 w-full rounded-xl text-[13.5px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer overflow-hidden"
-        [class.px-3]="!isCollapsed()"
-        [class.justify-center]="isCollapsed()"
-        title="Playlists"
-      >
-        <app-icon name="list-music" [size]="19" class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
-        <span 
-          class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
-          [class.max-w-0]="isCollapsed()"
-          [class.opacity-0]="isCollapsed()"
-          [class.ml-0]="isCollapsed()"
-          [class.max-w-[140px]]="!isCollapsed()"
-          [class.opacity-100]="!isCollapsed()"
-          [class.ml-3]="!isCollapsed()"
-        >
+        [class.px-3]="!isCollapsed()" [class.justify-center]="isCollapsed()" title="Playlists">
+        <app-icon name="list-music" [size]="19"
+          class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
+        <span class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          [class.max-w-0]="isCollapsed()" [class.opacity-0]="isCollapsed()" [class.ml-0]="isCollapsed()"
+          [class.max-w-[140px]]="!isCollapsed()" [class.opacity-100]="!isCollapsed()" [class.ml-3]="!isCollapsed()">
           Playlists
         </span>
       </a>
@@ -158,24 +99,15 @@
       <div class="h-[1px] bg-white/[0.06] my-1.5 w-full"></div>
 
       <!-- Link: Ajustes -->
-      <a 
-        routerLink="/settings" 
-        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" 
+      <a routerLink="/settings"
+        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white"
         class="group relative flex items-center h-10 w-full rounded-xl text-[13.5px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer overflow-hidden"
-        [class.px-3]="!isCollapsed()"
-        [class.justify-center]="isCollapsed()"
-        title="Ajustes"
-      >
-        <app-icon name="settings" [size]="19" class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
-        <span 
-          class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
-          [class.max-w-0]="isCollapsed()"
-          [class.opacity-0]="isCollapsed()"
-          [class.ml-0]="isCollapsed()"
-          [class.max-w-[140px]]="!isCollapsed()"
-          [class.opacity-100]="!isCollapsed()"
-          [class.ml-3]="!isCollapsed()"
-        >
+        [class.px-3]="!isCollapsed()" [class.justify-center]="isCollapsed()" title="Ajustes">
+        <app-icon name="settings" [size]="19"
+          class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
+        <span class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          [class.max-w-0]="isCollapsed()" [class.opacity-0]="isCollapsed()" [class.ml-0]="isCollapsed()"
+          [class.max-w-[140px]]="!isCollapsed()" [class.opacity-100]="!isCollapsed()" [class.ml-3]="!isCollapsed()">
           Ajustes
         </span>
       </a>
@@ -184,54 +116,34 @@
 
   <!-- Sidebar Footer: Abrir Carpeta & Conexión WebSocket -->
   <div class="flex flex-col gap-3 border-t border-white/[0.08] pt-3 transition-all duration-200">
-    <button
-      type="button"
-      class="flex items-center h-10 w-full rounded-xl transition-all duration-150 cursor-pointer overflow-hidden border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] text-zinc-300 hover:text-white"
-      [class.px-3]="!isCollapsed()"
-      [class.justify-center]="isCollapsed()"
-      (click)="openMusicFolder()"
-      title="Abrir Carpeta de Música"
-    >
+    <button type="button"
+      class="flex items-center gap-3 h-10 w-full rounded-xl transition-all duration-150 cursor-pointer overflow-hidden border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] text-zinc-300 hover:text-white"
+      [class.px-3]="!isCollapsed()" [class.justify-center]="isCollapsed()" (click)="openMusicFolder()"
+      title="Abrir Carpeta de Música">
       <app-icon name="folder" [size]="17" class="shrink-0" />
-      <span 
+      <span
         class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] text-xs font-medium"
-        [class.max-w-0]="isCollapsed()"
-        [class.opacity-0]="isCollapsed()"
-        [class.ml-0]="isCollapsed()"
-        [class.max-w-[120px]]="!isCollapsed()"
-        [class.opacity-100]="!isCollapsed()"
-        [class.ml-2.5]="!isCollapsed()"
-      >
+        [class.max-w-0]="isCollapsed()" [class.opacity-0]="isCollapsed()" [class.ml-0]="isCollapsed()"
+        [class.max-w-[120px]]="!isCollapsed()" [class.opacity-100]="!isCollapsed()" [class.ml-2.5]="!isCollapsed()">
         Abrir Carpeta
       </span>
     </button>
 
-    <div 
-      class="flex items-center h-6 w-full transition-all duration-200"
-      [class.px-2]="!isCollapsed()"
-      [class.justify-start]="!isCollapsed()"
-      [class.justify-center]="isCollapsed()"
-      [title]="ws.isConnected() ? 'Servidor Conectado' : 'Conectando al servidor...'"
-    >
+    @if (!ws.isConnected()) {
+    <div class="flex items-center h-6 w-full transition-all duration-300 animate-fade-in text-amber-400"
+      [class.px-2]="!isCollapsed()" [class.justify-start]="!isCollapsed()" [class.justify-center]="isCollapsed()"
+      title="Conectando con el servicio de audio...">
       <span class="relative flex h-2 w-2 shrink-0">
-        @if (ws.isConnected()) {
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
-        } @else {
-          <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-        }
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500 shadow-sm shadow-amber-500/50"></span>
       </span>
-      <span 
-        class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] text-[11.5px] text-zinc-400"
-        [class.max-w-0]="isCollapsed()"
-        [class.opacity-0]="isCollapsed()"
-        [class.ml-0]="isCollapsed()"
-        [class.max-w-[150px]]="!isCollapsed()"
-        [class.opacity-100]="!isCollapsed()"
-        [class.ml-2.5]="!isCollapsed()"
-      >
-        {{ ws.isConnected() ? 'Servidor Conectado' : 'Conectando...' }}
+      <span
+        class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] text-[11.5px] font-medium text-amber-300/80"
+        [class.max-w-0]="isCollapsed()" [class.opacity-0]="isCollapsed()" [class.ml-0]="isCollapsed()"
+        [class.max-w-[150px]]="!isCollapsed()" [class.opacity-100]="!isCollapsed()" [class.ml-2.5]="!isCollapsed()">
+        Conectando...
       </span>
     </div>
+    }
   </div>
 </aside>

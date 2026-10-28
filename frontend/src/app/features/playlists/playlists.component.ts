@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PlaylistsApiService } from '../../data/playlists-api.service';
+import { PlaylistsStore } from '../../core/stores/playlists.store';
 import { PlaylistSummary } from '../../domain/models';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -19,15 +20,18 @@ export type PlaylistCategoryTab = 'all' | 'user' | 'artist' | 'genre' | 'for_you
 })
 export class PlaylistsComponent implements OnInit {
   private readonly playlistsApi = inject(PlaylistsApiService);
+  private readonly playlistsStore = inject(PlaylistsStore);
   readonly player = inject(AudioPlayerService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
-  readonly userPlaylists = signal<PlaylistSummary[]>([]);
-  readonly forYouPlaylists = signal<PlaylistSummary[]>([]);
-  readonly artistPlaylists = signal<PlaylistSummary[]>([]);
-  readonly genrePlaylists = signal<PlaylistSummary[]>([]);
-  readonly isLoading = signal(true);
+  readonly userPlaylists = this.playlistsStore.userPlaylists;
+  readonly forYouPlaylists = this.playlistsStore.forYouPlaylists;
+  readonly artistPlaylists = this.playlistsStore.artistPlaylists;
+  readonly genrePlaylists = this.playlistsStore.genrePlaylists;
+  readonly isLoading = this.playlistsStore.isLoading;
+  readonly isInitialLoading = this.playlistsStore.isInitialLoading;
+  readonly connectionFailed = this.playlistsStore.connectionFailed;
   readonly isSyncing = signal(false);
 
   // Search & Filter State
@@ -97,24 +101,11 @@ export class PlaylistsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadPlaylists();
+    this.playlistsStore.load(false);
   }
 
-  loadPlaylists(): void {
-    this.isLoading.set(true);
-    this.playlistsApi.getPlaylists().subscribe({
-      next: (resp) => {
-        this.userPlaylists.set(resp.user_playlists);
-        this.forYouPlaylists.set(resp.for_you_playlists);
-        this.artistPlaylists.set(resp.artist_playlists);
-        this.genrePlaylists.set(resp.genre_playlists);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.isLoading.set(false);
-        this.toast.error('Error al cargar', 'No se pudieron recuperar las listas de reproducción.');
-      },
-    });
+  loadPlaylists(retryCount = 0): void {
+    this.playlistsStore.load(true, retryCount);
   }
 
   syncSmartPlaylists(): void {
