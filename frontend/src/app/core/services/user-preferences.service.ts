@@ -2,6 +2,8 @@ import { Service, signal, computed } from '@angular/core';
 import {
   LIBRARY_VIEW_MODES,
   LibraryViewMode,
+  REPEAT_MODES,
+  RepeatMode,
   STORAGE_KEYS,
   UserPreferenceKey
 } from '../constants/preferences.constants';
@@ -10,12 +12,16 @@ export interface UserPreferences {
   libraryViewMode: LibraryViewMode;
   defaultSearchProximityThreshold: number;
   sidebarCollapsed: boolean;
+  repeatMode: RepeatMode;
+  shuffleEnabled: boolean;
 }
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   libraryViewMode: LIBRARY_VIEW_MODES.LIST,
   defaultSearchProximityThreshold: 0.3,
-  sidebarCollapsed: false
+  sidebarCollapsed: false,
+  repeatMode: REPEAT_MODES.ALL,
+  shuffleEnabled: false
 };
 
 @Service()
@@ -25,6 +31,8 @@ export class UserPreferencesService {
   readonly preferences = this._preferences.asReadonly();
   readonly libraryViewMode = computed(() => this._preferences().libraryViewMode);
   readonly sidebarCollapsed = computed(() => this._preferences().sidebarCollapsed);
+  readonly repeatMode = computed(() => this._preferences().repeatMode);
+  readonly shuffleEnabled = computed(() => this._preferences().shuffleEnabled);
 
   constructor() {
     if (typeof window !== 'undefined') {

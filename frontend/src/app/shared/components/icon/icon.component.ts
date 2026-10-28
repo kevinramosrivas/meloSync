@@ -31,7 +31,13 @@ export type IconName =
   | 'list'
   | 'grid'
   | 'clock'
-  | 'panel-left';
+  | 'panel-left'
+  | 'shuffle'
+  | 'repeat'
+  | 'repeat-1'
+  | 'chevron-down'
+  | 'chevron-up'
+  | 'list-music';
 
 @Component({
   selector: 'app-icon',
@@ -193,6 +199,39 @@ export type IconName =
         @case ('panel-left') {
           <rect width="18" height="18" x="3" y="3" rx="2" />
           <line x1="9" y1="3" x2="9" y2="21" />
+        }
+        @case ('shuffle') {
+          <path d="M16 3h5v5" />
+          <path d="M4 20L21 3" />
+          <path d="M21 16v5h-5" />
+          <path d="M15 15l6 6" />
+          <path d="M4 4l5 5" />
+        }
+        @case ('repeat') {
+          <path d="m17 2 4 4-4 4" />
+          <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+          <path d="m7 22-4-4 4-4" />
+          <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+        }
+        @case ('repeat-1') {
+          <path d="m17 2 4 4-4 4" />
+          <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+          <path d="m7 22-4-4 4-4" />
+          <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+          <path d="M11 10h1v4" />
+        }
+        @case ('chevron-down') {
+          <path d="m6 9 6 6 6-6" />
+        }
+        @case ('chevron-up') {
+          <path d="m18 15-6-6-6 6" />
+        }
+        @case ('list-music') {
+          <path d="M21 15V6" />
+          <path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+          <path d="M12 12H3" />
+          <path d="M16 6H3" />
+          <path d="M12 18H3" />
         }
       }
     </svg>

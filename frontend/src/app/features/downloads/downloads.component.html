@@ -1,0 +1,80 @@
+<div class="flex flex-col gap-6 p-8 pb-16 max-w-5xl mx-auto w-full animate-fade-in">
+  <header class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-white">Monitor de Descargas</h1>
+      <p class="text-xs font-medium text-zinc-400 mt-1">Seguimiento en tiempo real del pipeline de descarga, audio y metadatos</p>
+    </div>
+    <button
+      type="button"
+      class="btn-secondary"
+      (click)="loadActiveDownloads()"
+    >
+      <app-icon name="refresh" [size]="15" />
+      <span>Actualizar</span>
+    </button>
+  </header>
+
+  <main class="w-full">
+    @if (tracks().length === 0) {
+      <div class="flex flex-col items-center justify-center py-32 gap-4 text-center text-zinc-400">
+        <div class="text-zinc-600">
+          <app-icon name="download" [size]="48" />
+        </div>
+        <h3 class="text-lg font-bold text-white">No hay descargas activas</h3>
+        <p class="text-xs text-zinc-500 max-w-sm">Ve a la pestaña de Búsqueda para descargar tu música favorita.</p>
+      </div>
+    } @else {
+      <div class="flex flex-col gap-4">
+        @for (track of tracks(); track track.id) {
+          <div class="flex flex-col gap-4 p-5 rounded-2xl bg-[#14141c]/80 hover:bg-[#1a1a24] border border-white/[0.08] shadow-md shadow-black/40 transition-colors">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1 min-w-0">
+                <h3 class="text-sm font-bold text-white truncate leading-tight" [title]="track.display_title">{{ track.display_title }}</h3>
+                <span class="text-xs font-medium text-zinc-400 block mt-1">{{ track.channel_name || 'YouTube' }}</span>
+              </div>
+              <app-status-badge [status]="track.status" />
+            </div>
+
+            <!-- Progress Bar & Speed info -->
+            <div class="flex flex-col gap-2">
+              <app-progress-bar [percent]="track.progress_percent" [height]="6" />
+
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-zinc-400 font-normal">
+                  @if (track.status === 'DESCARGANDO') {
+                    <span>Descargando audio de YouTube...</span>
+                  } @else if (track.status === 'PROCESANDO_AUDIO') {
+                    <span>Normalizando audio (Loudnorm -14 LUFS)...</span>
+                  } @else if (track.status === 'OBTENIENDO_METADATOS') {
+                    <span>Consultando iTunes y agregando carátula HD...</span>
+                  } @else if (track.status === 'COMPLETADA') {
+                    <span class="text-emerald-400 font-semibold">¡Procesamiento completado con éxito!</span>
+                  } @else if (track.status === 'ERROR') {
+                    <span class="text-red-400 font-semibold">{{ track.error_message || 'Error en el procesamiento' }}</span>
+                  } @else {
+                    <span>En cola de procesamiento...</span>
+                  }
+                </span>
+
+                <span class="font-bold text-white tabular-nums">{{ track.progress_percent | number:'1.0-1' }}%</span>
+              </div>
+            </div>
+
+            @if (track.status === 'ERROR') {
+              <div class="flex justify-end pt-1 border-t border-white/[0.06]">
+                <button
+                  type="button"
+                  class="btn-primary text-xs py-1.5"
+                  (click)="retry(track.id)"
+                >
+                  <app-icon name="refresh" [size]="14" />
+                  <span>Reintentar</span>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </main>
+</div>

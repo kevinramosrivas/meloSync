@@ -1,122 +1,236 @@
-<footer class="h-full w-full flex items-center justify-between px-8">
+<footer class="relative h-full w-full flex items-center justify-between px-8">
   <!-- Left: Track Metadata & Cover -->
   <div class="flex items-center gap-3.5 w-1/4 min-w-[250px] max-w-[380px] min-w-0">
     @if (player.currentTrack(); as track) {
-      <div class="h-13 w-13 shrink-0 rounded-xl overflow-hidden bg-[#181822] border border-white/[0.08] shadow-md">
-        @if (player.coverUrl()) {
-          <img [src]="player.coverUrl()" alt="Cover" class="block h-full w-full object-cover" />
-        } @else {
-          <div class="flex h-full w-full items-center justify-center text-zinc-500">
-            <app-icon name="music" [size]="22" />
-          </div>
-        }
+    <div class="h-13 w-13 shrink-0 rounded-xl overflow-hidden bg-[#181822] border border-white/[0.08] shadow-md">
+      @if (player.coverUrl()) {
+      <img [src]="player.coverUrl()" alt="Cover" class="block h-full w-full object-cover" />
+      } @else {
+      <div class="flex h-full w-full items-center justify-center text-zinc-500">
+        <app-icon name="music" [size]="22" />
       </div>
-      <div class="flex flex-col min-w-0">
-        <span class="text-sm font-bold text-white truncate leading-tight" [title]="track.display_title">{{ track.display_title }}</span>
-        <span class="text-xs font-medium text-zinc-400 truncate mt-0.5" [title]="track.display_artist">{{ track.display_artist }}</span>
-      </div>
+      }
+    </div>
+    <div class="flex flex-col min-w-0">
+      <span class="text-sm font-bold text-white truncate leading-tight" [title]="track.display_title">{{
+        track.display_title }}</span>
+      <span class="text-xs font-medium text-zinc-400 truncate mt-0.5" [title]="track.display_artist">{{
+        track.display_artist }}</span>
+    </div>
     } @else {
-      <div class="flex items-center gap-3 text-xs text-zinc-400">
-        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/[0.05] border border-white/[0.08] text-zinc-500">
-          <app-icon name="music" [size]="18" />
-        </div>
-        <div class="flex flex-col">
-          <span class="font-semibold text-zinc-300">Sin reproducción</span>
-          <span class="text-[11px] text-zinc-500">Elige una pista de tu biblioteca</span>
-        </div>
+    <div class="flex items-center gap-3 text-xs text-zinc-400">
+      <div
+        class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/[0.05] border border-white/[0.08] text-zinc-500">
+        <app-icon name="music" [size]="18" />
       </div>
+      <div class="flex flex-col">
+        <span class="font-semibold text-zinc-300">Sin reproducción</span>
+        <span class="text-[11px] text-zinc-500">Elige una pista de tu biblioteca</span>
+      </div>
+    </div>
     }
   </div>
 
   <!-- Center: Playback Controls & Timeline -->
   <div class="flex flex-col items-center justify-center gap-1.5 flex-1 max-w-[680px] mx-6">
     <!-- Control buttons -->
-    <div class="flex items-center gap-5">
-      <button
-        type="button"
-        (click)="player.playPrevious()"
-        title="Pista anterior"
-        [disabled]="!player.currentTrack()"
-        class="flex h-8 w-8 items-center justify-center rounded-full text-zinc-300 hover:text-white hover:bg-white/[0.1] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-      >
+    <div class="flex items-center gap-4">
+      <!-- Shuffle Button -->
+      <button type="button" (click)="player.toggleShuffle()"
+        [title]="player.isShuffle() ? 'Modo aleatorio: Activado' : 'Modo aleatorio: Desactivado'"
+        class="relative flex h-8 w-8 items-center justify-center rounded-full transition-colors cursor-pointer"
+        [class.text-[#fa2d48]]="player.isShuffle()" [class.hover:text-[#ff4760]]="player.isShuffle()"
+        [class.text-zinc-500]="!player.isShuffle()" [class.hover:text-zinc-200]="!player.isShuffle()">
+        <app-icon name="shuffle" [size]="16" />
+        @if (player.isShuffle()) {
+        <span class="absolute bottom-1 w-1 h-1 rounded-full bg-[#fa2d48]"></span>
+        }
+      </button>
+
+      <!-- Previous Track -->
+      <button type="button" (click)="player.playPrevious()" title="Pista anterior"
+        [disabled]="!player.currentTrack() || !player.hasPrevious()"
+        class="flex h-8 w-8 items-center justify-center rounded-full text-zinc-300 hover:text-white hover:bg-white/[0.1] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
         <app-icon name="skip-back" [size]="18" />
       </button>
 
-      <button
-        type="button"
+      <!-- Play / Pause Main Button -->
+      <button type="button"
         class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-tr from-[#fa2d48] to-[#ff4760] text-white shadow-lg shadow-[#fa2d48]/40 hover:scale-105 active:scale-95 transition-all disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
-        (click)="player.togglePlay()"
-        title="Reproducir / Pausar"
-        [disabled]="!player.currentTrack()"
-      >
+        (click)="player.togglePlay()" title="Reproducir / Pausar" [disabled]="!player.currentTrack()">
         <app-icon [name]="player.isPlaying() ? 'pause' : 'play'" [size]="21" />
       </button>
 
-      <button
-        type="button"
-        (click)="player.playNext()"
-        title="Pista siguiente"
-        [disabled]="!player.currentTrack()"
-        class="flex h-8 w-8 items-center justify-center rounded-full text-zinc-300 hover:text-white hover:bg-white/[0.1] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-      >
+      <!-- Next Track -->
+      <button type="button" (click)="player.playNext()" title="Pista siguiente"
+        [disabled]="!player.currentTrack() || !player.hasNext()"
+        class="flex h-8 w-8 items-center justify-center rounded-full text-zinc-300 hover:text-white hover:bg-white/[0.1] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
         <app-icon name="skip-forward" [size]="18" />
+      </button>
+
+      <!-- Repeat Button -->
+      <button type="button" (click)="player.cycleRepeatMode()"
+        [title]="player.repeatMode() === REPEAT_MODES.ONE ? 'Repetir: Esta canción' : (player.repeatMode() === REPEAT_MODES.ALL ? 'Repetir: Toda la lista' : 'Repetir: Desactivado')"
+        class="relative flex h-8 w-8 items-center justify-center rounded-full transition-colors cursor-pointer"
+        [class.text-[#fa2d48]]="player.repeatMode() !== REPEAT_MODES.OFF"
+        [class.hover:text-[#ff4760]]="player.repeatMode() !== REPEAT_MODES.OFF"
+        [class.text-zinc-500]="player.repeatMode() === REPEAT_MODES.OFF"
+        [class.hover:text-zinc-200]="player.repeatMode() === REPEAT_MODES.OFF">
+        <app-icon [name]="player.repeatMode() === REPEAT_MODES.ONE ? 'repeat-1' : 'repeat'" [size]="16" />
+        @if (player.repeatMode() !== REPEAT_MODES.OFF) {
+        <span class="absolute bottom-1 w-1 h-1 rounded-full bg-[#fa2d48]"></span>
+        }
       </button>
     </div>
 
     <!-- Timeline / Seek bar -->
     <div class="flex items-center gap-3 w-full">
-      <span class="w-10 text-right text-[11px] font-semibold text-zinc-400 tabular-nums">{{ player.currentTime() | duration }}</span>
+      <span class="w-10 text-right text-[11px] font-semibold text-zinc-400 tabular-nums">{{ player.currentTime() |
+        duration }}</span>
 
-      <div class="group relative flex h-1.5 hover:h-2 flex-1 rounded-full bg-white/[0.12] cursor-pointer transition-[height] items-center" (click)="onSeekClick($event)">
-        <div class="h-full rounded-full bg-gradient-to-r from-[#fa2d48] to-[#ff4760] relative" [style.width.%]="player.progressPercent()">
-          <span class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity"></span>
+      <div
+        class="group relative flex h-1.5 hover:h-2 flex-1 rounded-full bg-white/[0.12] cursor-pointer transition-[height] items-center"
+        (click)="onSeekClick($event)">
+        <div class="h-full rounded-full bg-gradient-to-r from-[#fa2d48] to-[#ff4760] relative"
+          [style.width.%]="player.progressPercent()">
+          <span
+            class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity"></span>
         </div>
       </div>
 
-      <span class="w-10 text-left text-[11px] font-semibold text-zinc-400 tabular-nums">{{ player.duration() | duration }}</span>
+      <span class="w-10 text-left text-[11px] font-semibold text-zinc-400 tabular-nums">{{ player.duration() | duration
+        }}</span>
     </div>
   </div>
 
   <!-- Right: Actions & Volume -->
-  <div class="flex items-center justify-end gap-3 w-1/4 min-w-[250px] max-w-[380px]">
-    @if (player.currentTrack(); as track) {
-      <button
-        type="button"
-        class="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
-        (click)="openInSystemPlayer(track.id)"
-        title="Abrir en reproductor del sistema"
-      >
-        <app-icon name="external-link" [size]="16" />
-      </button>
-      <button
-        type="button"
-        class="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
-        (click)="openFolder(track.id)"
-        title="Revelar en explorador"
-      >
-        <app-icon name="folder" [size]="16" />
-      </button>
-    }
+  <div class="flex items-center justify-end gap-2.5 w-1/4 min-w-[250px] max-w-[380px]">
+    <!-- Queue List Button -->
+    <button type="button"
+      class="relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors cursor-pointer"
+      [class.text-[#fa2d48]]="showQueue()" [class.bg-white/[0.1]]="showQueue()" [class.text-zinc-400]="!showQueue()"
+      [class.hover:text-white]="!showQueue()" [class.hover:bg-white/[0.08]]="!showQueue()" (click)="toggleQueue()"
+      title="Cola de reproducción">
+      <app-icon name="list-music" [size]="18" />
+      @if (player.queueCount() > 0) {
+      <span
+        class="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#fa2d48] px-1 text-[9px] font-bold text-white shadow-sm">
+        {{ player.queueCount() }}
+      </span>
+      }
+    </button>
+
+
 
     <!-- Volume Control -->
-    <div class="flex items-center gap-2.5 ml-2">
-      <button
-        type="button"
+    <div class="flex items-center gap-2 ml-1">
+      <button type="button"
         class="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
-        (click)="player.toggleMute()"
-        title="Silenciar / Activar sonido"
-      >
+        (click)="player.toggleMute()" title="Silenciar / Activar sonido">
         <app-icon [name]="player.isMuted() || player.volume() === 0 ? 'volume-x' : 'volume-2'" [size]="18" />
       </button>
-      <input 
-        type="range" 
-        min="0" 
-        max="1" 
-        step="0.01" 
-        [value]="player.volume()" 
-        (input)="onVolumeChange($event)"
-        class="w-24 h-1.5 accent-[#fa2d48] cursor-pointer" 
-      />
+      <input type="range" min="0" max="1" step="0.01" [value]="player.volume()" (input)="onVolumeChange($event)"
+        class="w-20 h-1.5 accent-[#fa2d48] cursor-pointer" />
     </div>
   </div>
+
+  <!-- Floating Queue Popover Panel (Glassmorphic Apple Style) -->
+  @if (showQueue()) {
+  <div
+    class="absolute bottom-24 right-8 w-96 max-h-[480px] bg-[#0f0f16]/95 backdrop-blur-2xl border border-white/[0.12] rounded-2xl shadow-2xl p-4 flex flex-col z-50 animate-in fade-in zoom-in-95 duration-150">
+    <!-- Popover Header -->
+    <div class="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+      <div class="flex items-center gap-2">
+        <app-icon name="list-music" [size]="18" class="text-[#fa2d48]" />
+        <h3 class="text-sm font-bold text-white tracking-tight">Cola de Reproducción</h3>
+        <span class="text-xs text-zinc-400 font-medium">({{ player.queueCount() }})</span>
+      </div>
+      <button type="button" (click)="closeQueue()"
+        class="flex h-6 w-6 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
+        title="Cerrar cola">
+        <app-icon name="x" [size]="14" />
+      </button>
+    </div>
+
+    <!-- Current Track (En Reproducción) -->
+    @if (player.currentTrack(); as cur) {
+    <div class="mt-3 p-2.5 rounded-xl bg-white/[0.04] border border-[#fa2d48]/20 flex items-center justify-between">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div
+          class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#181822] overflow-hidden border border-white/[0.08]">
+          @if (player.coverUrl()) {
+          <img [src]="player.coverUrl()" alt="" class="h-full w-full object-cover" />
+          } @else {
+          <app-icon name="music" [size]="16" class="text-zinc-500" />
+          }
+          <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <app-icon [name]="player.isPlaying() ? 'pause' : 'play'" [size]="14" class="text-white" />
+          </div>
+        </div>
+        <div class="flex flex-col min-w-0">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-[#fa2d48]">En reproducción</span>
+          <span class="text-xs font-bold text-white truncate max-w-[200px]" [title]="cur.display_title">{{
+            cur.display_title }}</span>
+          <span class="text-[11px] text-zinc-400 truncate max-w-[200px]" [title]="cur.display_artist">{{
+            cur.display_artist }}</span>
+        </div>
+      </div>
+      <span class="text-[11px] font-medium text-zinc-400 tabular-nums shrink-0">
+        {{ player.currentTime() | duration }} / {{ player.duration() | duration }}
+      </span>
+    </div>
+    }
+
+    <!-- Next Up Section (A continuación) -->
+    <div
+      class="mt-3 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-zinc-400 px-1">
+      <span>A continuación</span>
+      @if (player.playlist().length > 1) {
+      <span class="text-zinc-500 font-normal normal-case">
+        {{ player.isShuffle() ? 'Orden aleatorio' : (player.repeatMode() === REPEAT_MODES.ALL ? 'Bucle infinito' :
+        'Secuencial') }}
+      </span>
+      }
+    </div>
+
+    <div class="mt-2 flex-1 overflow-y-auto space-y-1 pr-1 max-h-[260px] scrollbar-thin">
+      @if (player.playlist().length === 0) {
+      <div class="py-8 text-center text-xs text-zinc-500">
+        No hay pistas en la cola de reproducción.
+      </div>
+      } @else {
+      @for (item of player.playlist(); track item.id; let i = $index) {
+      <div class="group flex items-center justify-between p-2 rounded-xl transition-all cursor-pointer"
+        [class.bg-[#fa2d48]/10]="item.id === player.currentTrack()?.id"
+        [class.border]="item.id === player.currentTrack()?.id"
+        [class.border-[#fa2d48]/30]="item.id === player.currentTrack()?.id"
+        [class.hover:bg-white/[0.06]]="item.id !== player.currentTrack()?.id" (click)="playFromQueue(item)"
+        [title]="'Reproducir ' + item.display_title">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="w-5 text-center text-[11px] font-bold shrink-0 tabular-nums"
+            [class.text-[#fa2d48]]="item.id === player.currentTrack()?.id"
+            [class.text-zinc-500]="item.id !== player.currentTrack()?.id">
+            {{ i + 1 }}
+          </span>
+          <div class="flex flex-col min-w-0">
+            <span class="text-xs font-semibold truncate max-w-[210px]"
+              [class.text-[#fa2d48]]="item.id === player.currentTrack()?.id"
+              [class.text-zinc-200]="item.id !== player.currentTrack()?.id"
+              [class.group-hover:text-white]="item.id !== player.currentTrack()?.id">
+              {{ item.display_title }}
+            </span>
+            <span class="text-[11px] text-zinc-400 truncate max-w-[210px]">
+              {{ item.display_artist }}
+            </span>
+          </div>
+        </div>
+        <span class="text-[11px] text-zinc-500 tabular-nums shrink-0">
+          {{ item.duration_formatted || (item.duration_seconds | duration) }}
+        </span>
+      </div>
+      }
+      }
+    </div>
+  </div>
+  }
 </footer>

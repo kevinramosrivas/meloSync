@@ -5,10 +5,20 @@ export const LIBRARY_VIEW_MODES = {
 
 export type LibraryViewMode = (typeof LIBRARY_VIEW_MODES)[keyof typeof LIBRARY_VIEW_MODES];
 
+export const REPEAT_MODES = {
+  OFF: 'off',
+  ALL: 'all',
+  ONE: 'one'
+} as const;
+
+export type RepeatMode = (typeof REPEAT_MODES)[keyof typeof REPEAT_MODES];
+
 export const USER_PREFERENCE_KEYS = {
   LIBRARY_VIEW_MODE: 'libraryViewMode',
   DEFAULT_SEARCH_PROXIMITY_THRESHOLD: 'defaultSearchProximityThreshold',
-  SIDEBAR_COLLAPSED: 'sidebarCollapsed'
+  SIDEBAR_COLLAPSED: 'sidebarCollapsed',
+  REPEAT_MODE: 'repeatMode',
+  SHUFFLE_ENABLED: 'shuffleEnabled'
 } as const;
 
 export type UserPreferenceKey = (typeof USER_PREFERENCE_KEYS)[keyof typeof USER_PREFERENCE_KEYS];

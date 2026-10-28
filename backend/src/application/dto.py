@@ -65,6 +65,8 @@ class TrackDTO:
     file_path: Optional[str] = None
     error_message: Optional[str] = None
     metadata: Optional[TrackMetadataDTO] = None
+    play_count: int = 0
+    last_played_at_iso: Optional[str] = None
     created_at_iso: str = ""
     updated_at_iso: str = ""
 
@@ -86,6 +88,8 @@ class TrackDTO:
             file_path=track.file_path,
             error_message=track.error_message,
             metadata=TrackMetadataDTO.from_domain(track.metadata),
+            play_count=track.play_count,
+            last_played_at_iso=track.last_played_at.isoformat() if track.last_played_at else None,
             created_at_iso=track.created_at.isoformat(),
             updated_at_iso=track.updated_at.isoformat(),
         )

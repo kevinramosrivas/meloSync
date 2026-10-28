@@ -22,6 +22,16 @@ export const routes: Routes = [
     title: 'meloSync — Biblioteca'
   },
   {
+    path: 'playlists',
+    loadComponent: () => import('./features/playlists/playlists.component').then(m => m.PlaylistsComponent),
+    title: 'meloSync — Playlists'
+  },
+  {
+    path: 'playlists/:id',
+    loadComponent: () => import('./features/playlists/playlist-detail/playlist-detail.component').then(m => m.PlaylistDetailComponent),
+    title: 'meloSync — Detalle de Playlist'
+  },
+  {
     path: 'settings',
     loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent),
     title: 'meloSync — Ajustes'

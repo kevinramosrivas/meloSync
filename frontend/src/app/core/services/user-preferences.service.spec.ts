@@ -48,6 +48,10 @@ describe('UserPreferencesService', () => {
     expect(service.libraryViewMode()).toBe(LIBRARY_VIEW_MODES.LIST);
     expect(service.get('sidebarCollapsed')).toBe(false);
     expect(service.sidebarCollapsed()).toBe(false);
+    expect(service.get('repeatMode')).toBe('all');
+    expect(service.repeatMode()).toBe('all');
+    expect(service.get('shuffleEnabled')).toBe(false);
+    expect(service.shuffleEnabled()).toBe(false);
   });
 
   it('should set and persist individual preference keys', () => {
@@ -58,6 +62,10 @@ describe('UserPreferencesService', () => {
     service.set('sidebarCollapsed', true);
     expect(service.get('sidebarCollapsed')).toBe(true);
     expect(service.sidebarCollapsed()).toBe(true);
+
+    service.set('repeatMode', 'one');
+    expect(service.get('repeatMode')).toBe('one');
+    expect(service.repeatMode()).toBe('one');
 
     const raw = localStorage.getItem(STORAGE_KEYS.USER_PREFERENCES);
     expect(raw).toBeTruthy();

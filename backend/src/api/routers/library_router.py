@@ -10,7 +10,7 @@ import sys
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-from fastapi.responses import StreamingResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 
 from ..dependencies import Container, get_container
 from ..schemas import SyncLibraryResponse, TrackResponse
@@ -139,18 +139,23 @@ def get_track_cover(
     track_id: str,
     container: Container = Depends(get_container),
 ):
-    """Retrieves embedded cover art bytes for a track."""
+    """Retrieves embedded cover art bytes for a track, or redirects to remote cover URL."""
     with container.uow_factory() as uow:
         track = uow.tracks.get_by_id(track_id)
-        if not track or not track.metadata or not track.metadata.cover_bytes:
+        if not track or not track.metadata:
             raise HTTPException(status_code=404, detail="Carátula no disponible.")
 
-        cover_bytes = track.metadata.cover_bytes
-        mime_type = "image/jpeg"
-        if cover_bytes.startswith(b"\x89PNG"):
-            mime_type = "image/png"
+        if track.metadata.cover_bytes:
+            cover_bytes = track.metadata.cover_bytes
+            mime_type = "image/jpeg"
+            if cover_bytes.startswith(b"\x89PNG"):
+                mime_type = "image/png"
+            return Response(content=cover_bytes, media_type=mime_type)
 
-        return Response(content=cover_bytes, media_type=mime_type)
+        if track.metadata.cover_url:
+            return RedirectResponse(url=track.metadata.cover_url, status_code=307)
+
+        raise HTTPException(status_code=404, detail="Carátula no disponible.")
 
 
 @router.post("/{track_id}/open-file")
@@ -241,3 +246,18 @@ def delete_track(
         raise HTTPException(status_code=404, detail="No se pudo eliminar la pista.")
     except TrackNotFoundException:
         raise HTTPException(status_code=404, detail="Pista no encontrada.")
+
+
+@router.post("/{track_id}/record-play")
+def record_play(
+    track_id: str,
+    container: Container = Depends(get_container),
+):
+    """Records a single playback event after 30s or onended, updating metrics."""
+    with container.uow_factory() as uow:
+        track = uow.tracks.get_by_id(track_id)
+        if not track:
+            raise HTTPException(status_code=404, detail="Pista no encontrada.")
+        uow.tracks.record_play(track_id)
+        uow.commit()
+    return {"message": "Reproducción registrada.", "track_id": track_id}

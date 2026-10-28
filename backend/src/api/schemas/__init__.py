@@ -78,7 +78,7 @@ class TrackMetadataResponse(BaseModel):
             track_number=dto.track_number,
             disc_number=getattr(dto, "disc_number", None),
             cover_url=dto.cover_url,
-            has_cover_bytes=getattr(dto, "has_cover_bytes", False),
+            has_cover_bytes=getattr(dto, "has_cover_bytes", False) or bool(getattr(dto, "cover_bytes", None)),
             lyrics=getattr(dto, "lyrics", None),
         )
 
@@ -111,6 +111,8 @@ class TrackResponse(BaseModel):
     file_exists: bool = True
     error_message: Optional[str] = None
     metadata: Optional[TrackMetadataResponse] = None
+    play_count: int = 0
+    last_played_at_iso: Optional[str] = None
     created_at_iso: str = ""
     updated_at_iso: str = ""
 
@@ -122,6 +124,22 @@ class TrackResponse(BaseModel):
                 file_exists = bool(dto.file_path and Path(dto.file_path).is_file())
             except Exception:
                 file_exists = False
+
+        # Support both TrackDTO (created_at_iso) and domain Track (created_at datetime)
+        created_at_val = getattr(dto, "created_at_iso", None)
+        if not created_at_val:
+            raw_created = getattr(dto, "created_at", None)
+            created_at_val = raw_created.isoformat() if raw_created else ""
+
+        updated_at_val = getattr(dto, "updated_at_iso", None)
+        if not updated_at_val:
+            raw_updated = getattr(dto, "updated_at", None)
+            updated_at_val = raw_updated.isoformat() if raw_updated else ""
+
+        last_played_val = getattr(dto, "last_played_at_iso", None)
+        if not last_played_val:
+            raw_last_played = getattr(dto, "last_played_at", None)
+            last_played_val = raw_last_played.isoformat() if raw_last_played else None
 
         return cls(
             id=dto.id,
@@ -140,8 +158,10 @@ class TrackResponse(BaseModel):
             file_exists=file_exists,
             error_message=dto.error_message,
             metadata=TrackMetadataResponse.from_dto(dto.metadata),
-            created_at_iso=dto.created_at_iso,
-            updated_at_iso=dto.updated_at_iso,
+            play_count=getattr(dto, "play_count", 0),
+            last_played_at_iso=last_played_val,
+            created_at_iso=created_at_val,
+            updated_at_iso=updated_at_val,
         )
 
 

@@ -85,6 +85,10 @@ class TrackModel(Base):
     meta_cover_bytes: Mapped[Optional[bytes]] = mapped_column(LargeBinary, nullable=True)
     meta_lyrics: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+    # Play metrics
+    play_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_played_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
@@ -125,6 +129,8 @@ class TrackModel(Base):
             file_path=self.file_path,
             error_message=self.error_message,
             metadata=metadata,
+            play_count=self.play_count or 0,
+            last_played_at=self.last_played_at,
             created_at=self.created_at,
             updated_at=self.updated_at,
         )
@@ -143,6 +149,8 @@ class TrackModel(Base):
             progress_percent=track.progress_percent,
             file_path=track.file_path,
             error_message=track.error_message,
+            play_count=track.play_count,
+            last_played_at=track.last_played_at,
             created_at=track.created_at,
             updated_at=track.updated_at,
         )
@@ -160,6 +168,15 @@ class TrackModel(Base):
         return model
 
 
+class TrackPlayHistoryModel(Base):
+    """SQLAlchemy model for recording individual track playback events."""
+    __tablename__ = "track_play_history"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    track_id: Mapped[str] = mapped_column(String(36), ForeignKey("tracks.id", ondelete="CASCADE"), index=True, nullable=False)
+    played_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+
+
 class PlaylistModel(Base):
     """SQLAlchemy model for Playlist entity."""
     __tablename__ = "playlists"
@@ -167,6 +184,10 @@ class PlaylistModel(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(256), nullable=False)
     description: Mapped[str] = mapped_column(String(1024), default="")
+    is_smart: Mapped[bool] = mapped_column(Boolean, default=False)
+    playlist_type: Mapped[str] = mapped_column(String(32), default="custom", index=True)
+    filter_query: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    cover_url: Mapped[Optional[str]] = mapped_column(String(1024), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
@@ -182,9 +203,28 @@ class PlaylistModel(Base):
             id=self.id,
             name=self.name,
             description=self.description,
+            is_smart=self.is_smart,
+            playlist_type=self.playlist_type,
+            filter_query=self.filter_query,
+            cover_url=self.cover_url,
             tracks=[t.to_domain() for t in self.tracks],
             created_at=self.created_at,
             updated_at=self.updated_at,
+        )
+
+    @classmethod
+    def from_domain(cls, p: Playlist) -> PlaylistModel:
+        """Creates model from domain entity."""
+        return cls(
+            id=p.id,
+            name=p.name,
+            description=p.description,
+            is_smart=p.is_smart,
+            playlist_type=p.playlist_type,
+            filter_query=p.filter_query,
+            cover_url=p.cover_url,
+            created_at=p.created_at,
+            updated_at=p.updated_at,
         )
 
 
@@ -263,23 +303,46 @@ class DatabaseManager:
         # Automatic column migration for existing SQLite databases
         with self.engine.connect() as conn:
             cursor = conn.connection.cursor()
-            cursor.execute("PRAGMA table_info(tracks)")
-            existing_columns = {row[1] for row in cursor.fetchall()}
 
-            columns_to_add = {
+            # 1. Migrate tracks table columns
+            cursor.execute("PRAGMA table_info(tracks)")
+            existing_track_cols = {row[1] for row in cursor.fetchall()}
+
+            track_cols_to_add = {
                 "meta_track_number": "INTEGER",
                 "meta_disc_number": "INTEGER",
                 "meta_cover_bytes": "BLOB",
                 "meta_lyrics": "TEXT",
+                "play_count": "INTEGER DEFAULT 0",
+                "last_played_at": "DATETIME",
             }
 
-            for col_name, col_type in columns_to_add.items():
-                if col_name not in existing_columns and existing_columns:
+            for col_name, col_type in track_cols_to_add.items():
+                if col_name not in existing_track_cols and existing_track_cols:
                     try:
                         cursor.execute(f"ALTER TABLE tracks ADD COLUMN {col_name} {col_type}")
                         logger.info("Migrated column '%s' into 'tracks' table", col_name)
                     except Exception as e:
-                        logger.warning("Could not add column %s: %s", col_name, e)
+                        logger.warning("Could not add column %s to tracks: %s", col_name, e)
+
+            # 2. Migrate playlists table columns
+            cursor.execute("PRAGMA table_info(playlists)")
+            existing_playlist_cols = {row[1] for row in cursor.fetchall()}
+
+            playlist_cols_to_add = {
+                "is_smart": "BOOLEAN DEFAULT 0",
+                "playlist_type": "VARCHAR(32) DEFAULT 'custom'",
+                "filter_query": "VARCHAR(256)",
+                "cover_url": "VARCHAR(1024)",
+            }
+
+            for col_name, col_type in playlist_cols_to_add.items():
+                if col_name not in existing_playlist_cols and existing_playlist_cols:
+                    try:
+                        cursor.execute(f"ALTER TABLE playlists ADD COLUMN {col_name} {col_type}")
+                        logger.info("Migrated column '%s' into 'playlists' table", col_name)
+                    except Exception as e:
+                        logger.warning("Could not add column %s to playlists: %s", col_name, e)
 
             conn.connection.commit()
 

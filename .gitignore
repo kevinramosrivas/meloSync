@@ -12,7 +12,7 @@ __pycache__/
 build/
 develop-eggs/
 dist/
-downloads/
+/downloads/
 eggs/
 .eggs/
 lib/
@@ -74,9 +74,9 @@ pnpm-debug.log*
 *.db
 *.sqlite
 *.sqlite3
-music/
-temp/
-cache/
+/music/
+/temp/
+/cache/
 *.mp3
 *.m4a
 *.opus

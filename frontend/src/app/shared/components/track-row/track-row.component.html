@@ -1,0 +1,210 @@
+<div
+  class="group track-list-grid gap-2 sm:gap-4 px-3 sm:px-4 py-2.5 transition-colors duration-150 cursor-pointer select-none border-l-2"
+  [class.border-transparent]="!isCurrent()"
+  [class.bg-white/[0.02]]="!isCurrent()"
+  [class.hover:bg-white/[0.06]]="!isCurrent()"
+  [class.border-l-[#fa2d48]]="isCurrent()"
+  [class.bg-[#fa2d48]/[0.08]]="isCurrent()"
+  [class.hover:bg-[#fa2d48]/[0.12]]="isCurrent()"
+  [class.opacity-60]="track().file_exists === false"
+  (dblclick)="onRowDblClick()"
+  (click)="onPlayAction()"
+>
+  <!-- Column 1: Index / Animated Equalizer SVG / Play/Pause Button -->
+  <div 
+    class="flex items-center justify-center h-8 w-full"
+    (click)="onPlayAction($event)"
+  >
+    @if (isCurrent()) {
+      @if (isPlaying()) {
+        <!-- Playing state: equalizer visible, pause button on hover -->
+        <div class="group-hover:hidden flex items-center justify-center">
+          <app-equalizer-indicator [isPlaying]="true" [size]="16" />
+        </div>
+        <button
+          type="button"
+          class="hidden group-hover:flex items-center justify-center text-[#fa2d48] hover:scale-110 active:scale-95 transition-all cursor-pointer"
+          title="Pausar"
+        >
+          <app-icon name="pause" [size]="16" />
+        </button>
+      } @else {
+        <!-- Paused state: paused equalizer, play button on hover -->
+        <div class="group-hover:hidden flex items-center justify-center opacity-75">
+          <app-equalizer-indicator [isPlaying]="false" [size]="16" />
+        </div>
+        <button
+          type="button"
+          class="hidden group-hover:flex items-center justify-center text-[#fa2d48] hover:scale-110 active:scale-95 transition-all cursor-pointer"
+          title="Reanudar"
+        >
+          <app-icon name="play" [size]="16" />
+        </button>
+      }
+    } @else {
+      <!-- Default state: Index or minimal clean rank badge, play button on hover -->
+      @if (showRankBadge()) {
+        <span 
+          class="group-hover:hidden text-xs tabular-nums tracking-tight"
+          [class.font-black]="index() < 3"
+          [class.text-amber-400]="index() === 0"
+          [class.text-zinc-200]="index() === 1"
+          [class.text-amber-600]="index() === 2"
+          [class.text-zinc-500]="index() >= 3"
+          [class.font-mono]="index() >= 3"
+        >
+          #{{ index() + 1 }}
+        </span>
+      } @else {
+        <span class="group-hover:hidden text-xs font-mono text-zinc-500 tabular-nums">
+          {{ index() + 1 }}
+        </span>
+      }
+
+      <button
+        type="button"
+        class="hidden group-hover:flex items-center justify-center text-zinc-300 hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
+        title="Reproducir pista"
+      >
+        <app-icon name="play" [size]="16" />
+      </button>
+    }
+  </div>
+
+  <!-- Column 2: Cover Art + Title + Artist -->
+  <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+    <div class="relative h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 rounded-lg overflow-hidden bg-[#181822] border border-white/[0.08] shadow-sm flex items-center justify-center">
+      @if (track().file_exists === false) {
+        <span class="absolute inset-0 bg-red-600/70 flex items-center justify-center text-[9px] font-bold text-white z-10" title="Archivo no encontrado">!</span>
+      }
+      @if (track() | coverUrl; as coverUrl) {
+        <img 
+          [src]="coverUrl" 
+          [alt]="track().display_title" 
+          class="h-full w-full object-cover" 
+          loading="lazy" 
+          decoding="async" 
+          onerror="this.style.display='none'; this.nextElementSibling?.classList.remove('hidden')"
+        />
+        <div class="hidden flex h-full w-full items-center justify-center text-zinc-600 bg-[#181822]">
+          <app-icon name="music" [size]="18" />
+        </div>
+      } @else {
+        <div class="flex h-full w-full items-center justify-center text-zinc-600 bg-[#181822]">
+          <app-icon name="music" [size]="18" />
+        </div>
+      }
+    </div>
+
+    <div class="flex flex-col min-w-0">
+      <span
+        class="text-[13px] sm:text-sm font-semibold truncate leading-snug"
+        [class.text-white]="!isCurrent()"
+        [class.text-[#fa2d48]]="isCurrent()"
+        [title]="track().display_title"
+      >
+        {{ track().display_title }}
+      </span>
+      <span class="text-[11.5px] sm:text-xs text-zinc-400 truncate" [title]="track().display_artist">
+        {{ track().display_artist }}
+        @if (track().display_album) {
+          <span class="md:hidden text-zinc-500 font-normal"> • {{ track().display_album }}</span>
+        }
+      </span>
+    </div>
+  </div>
+
+  <!-- Column 3: Album (Hidden on mobile) -->
+  <div class="hidden md:block text-xs text-zinc-400 truncate" [title]="track().display_album">
+    {{ track().display_album || '—' }}
+  </div>
+
+  <!-- Column 4: Genre / Year (Hidden on mobile/tablet) -->
+  <div class="hidden xl:flex items-center gap-1.5 min-w-0 overflow-hidden text-xs">
+    @if (track().metadata?.genre) {
+      <span class="px-2 py-0.5 rounded-md bg-white/[0.06] text-[11px] font-medium text-zinc-300 truncate max-w-[110px]" [title]="track().metadata?.genre">
+        {{ track().metadata?.genre }}
+      </span>
+    }
+    @if (track().metadata?.year) {
+      <span class="text-[11px] text-zinc-500 font-mono">
+        {{ track().metadata?.year }}
+      </span>
+    }
+    @if (!track().metadata?.genre && !track().metadata?.year) {
+      <span class="text-zinc-600">—</span>
+    }
+  </div>
+
+  <!-- Column 5: Duration -->
+  <div class="text-[11.5px] sm:text-xs text-zinc-400 font-semibold text-right tabular-nums">
+    {{ track().duration_seconds | duration }}
+  </div>
+
+  <!-- Column 6: Actions -->
+  <div class="flex items-center justify-end gap-0.5 sm:gap-1 opacity-75 group-hover:opacity-100 transition-opacity">
+    <!-- Add to playlist (always available) -->
+    <button
+      type="button"
+      class="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
+      (click)="onAddToPlaylist($event)"
+      title="Añadir a playlist..."
+    >
+      <app-icon name="list-music" [size]="14" />
+    </button>
+
+    @if (context() === 'library') {
+      <!-- Edit metadata (Library only) -->
+      <button
+        type="button"
+        class="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
+        (click)="onEditMetadata($event)"
+        title="Editar metadatos / carátula"
+      >
+        <app-icon name="pencil" [size]="13" />
+      </button>
+
+      <!-- Reveal in folder (Library) -->
+      <button
+        type="button"
+        class="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
+        (click)="onOpenFolder($event)"
+        title="Revelar en explorador"
+      >
+        <app-icon name="folder" [size]="13" />
+      </button>
+
+      <!-- Delete physical track (Library only) -->
+      <button
+        type="button"
+        class="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg text-zinc-400 hover:!text-red-400 hover:!bg-red-500/10 transition-colors cursor-pointer"
+        (click)="onDelete($event)"
+        title="Eliminar pista"
+      >
+        <app-icon name="trash" [size]="13" />
+      </button>
+    } @else {
+      <!-- Reveal in folder (Playlist) -->
+      <button
+        type="button"
+        class="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
+        (click)="onOpenFolder($event)"
+        title="Revelar en explorador"
+      >
+        <app-icon name="folder" [size]="13" />
+      </button>
+
+      @if (!isSmartPlaylist()) {
+        <!-- Remove from custom playlist (Custom playlists only) -->
+        <button
+          type="button"
+          class="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg text-zinc-400 hover:!text-red-400 hover:!bg-red-500/10 transition-colors cursor-pointer"
+          (click)="onRemoveFromPlaylist($event)"
+          title="Quitar de esta lista"
+        >
+          <app-icon name="trash" [size]="13" />
+        </button>
+      }
+    }
+  </div>
+</div>

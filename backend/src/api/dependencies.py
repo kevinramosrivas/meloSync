@@ -97,6 +97,49 @@ class Container:
     def get_sync_library_use_case(self) -> SyncLibraryUseCase:
         return SyncLibraryUseCase(uow_factory=self.uow_factory)
 
+    # Playlist use cases
+    def get_create_playlist_use_case(self) -> CreatePlaylistUseCase:
+        from ..application.use_cases.manage_playlists import CreatePlaylistUseCase
+        return CreatePlaylistUseCase(uow_factory=self.uow_factory)
+
+    def get_playlists_grouped_use_case(self) -> GetPlaylistsGroupedUseCase:
+        from ..application.use_cases.manage_playlists import GetPlaylistsGroupedUseCase
+        return GetPlaylistsGroupedUseCase(uow_factory=self.uow_factory)
+
+    def get_playlist_by_id_use_case(self) -> GetPlaylistByIdUseCase:
+        from ..application.use_cases.manage_playlists import GetPlaylistByIdUseCase
+        return GetPlaylistByIdUseCase(
+            uow_factory=self.uow_factory,
+            itunes_provider=self.metadata_provider,
+        )
+
+    def get_update_playlist_use_case(self) -> UpdatePlaylistUseCase:
+        from ..application.use_cases.manage_playlists import UpdatePlaylistUseCase
+        return UpdatePlaylistUseCase(uow_factory=self.uow_factory)
+
+    def get_delete_playlist_use_case(self) -> DeletePlaylistUseCase:
+        from ..application.use_cases.manage_playlists import DeletePlaylistUseCase
+        return DeletePlaylistUseCase(uow_factory=self.uow_factory)
+
+    def get_add_track_to_playlist_use_case(self) -> AddTrackToPlaylistUseCase:
+        from ..application.use_cases.manage_playlists import AddTrackToPlaylistUseCase
+        return AddTrackToPlaylistUseCase(uow_factory=self.uow_factory)
+
+    def get_remove_track_from_playlist_use_case(self) -> RemoveTrackFromPlaylistUseCase:
+        from ..application.use_cases.manage_playlists import RemoveTrackFromPlaylistUseCase
+        return RemoveTrackFromPlaylistUseCase(uow_factory=self.uow_factory)
+
+    def get_record_track_play_use_case(self) -> RecordTrackPlayUseCase:
+        from ..application.use_cases.manage_playlists import RecordTrackPlayUseCase
+        return RecordTrackPlayUseCase(uow_factory=self.uow_factory)
+
+    def get_sync_smart_playlists_use_case(self) -> SyncSmartPlaylistsUseCase:
+        from ..application.use_cases.manage_playlists import SyncSmartPlaylistsUseCase
+        return SyncSmartPlaylistsUseCase(
+            uow_factory=self.uow_factory,
+            itunes_provider=self.metadata_provider,
+        )
+
 
 @lru_cache(maxsize=1)
 def get_container() -> Container:

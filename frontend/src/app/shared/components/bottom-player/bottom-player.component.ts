@@ -1,20 +1,36 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, signal } from '@angular/core';
 import { AudioPlayerService } from '../../../core/services/audio-player.service';
 import { DurationPipe } from '../../pipes/duration.pipe';
 import { LibraryApiService } from '../../../data/library-api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { IconComponent } from '../icon/icon.component';
+import { REPEAT_MODES } from '../../../core/constants/preferences.constants';
+import { Track } from '../../../domain/models';
 
 @Component({
   selector: 'app-bottom-player',
-  imports: [CommonModule, DurationPipe, IconComponent],
+  imports: [DurationPipe, IconComponent],
   templateUrl: './bottom-player.component.html'
 })
 export class BottomPlayerComponent {
   readonly player = inject(AudioPlayerService);
   private libraryApi = inject(LibraryApiService);
   private toast = inject(ToastService);
+
+  readonly showQueue = signal<boolean>(false);
+  readonly REPEAT_MODES = REPEAT_MODES;
+
+  toggleQueue(): void {
+    this.showQueue.update(v => !v);
+  }
+
+  closeQueue(): void {
+    this.showQueue.set(false);
+  }
+
+  playFromQueue(track: Track): void {
+    this.player.playTrack(track);
+  }
 
   onSeekClick(event: MouseEvent): void {
     const track = event.currentTarget as HTMLElement;

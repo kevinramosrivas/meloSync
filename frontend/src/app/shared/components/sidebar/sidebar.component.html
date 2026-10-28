@@ -131,6 +131,29 @@
         </span>
       </a>
 
+      <!-- Link: Playlists -->
+      <a 
+        routerLink="/playlists" 
+        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white" 
+        class="group relative flex items-center h-10 w-full rounded-xl text-[13.5px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer overflow-hidden"
+        [class.px-3]="!isCollapsed()"
+        [class.justify-center]="isCollapsed()"
+        title="Playlists"
+      >
+        <app-icon name="list-music" [size]="19" class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
+        <span 
+          class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          [class.max-w-0]="isCollapsed()"
+          [class.opacity-0]="isCollapsed()"
+          [class.ml-0]="isCollapsed()"
+          [class.max-w-[140px]]="!isCollapsed()"
+          [class.opacity-100]="!isCollapsed()"
+          [class.ml-3]="!isCollapsed()"
+        >
+          Playlists
+        </span>
+      </a>
+
       <!-- Persistent Subtle Divider (Matches in both states) -->
       <div class="h-[1px] bg-white/[0.06] my-1.5 w-full"></div>
 

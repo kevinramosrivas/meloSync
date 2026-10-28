@@ -43,8 +43,25 @@ pub fn run() {
                 }
             }
 
-            // Forzar la aplicación del icono en la ventana y barra de tareas para Windows/Linux
+            // Registrar AppUserModelID en Windows para que el Centro de Medios y SMTC reconozcan meloSync
+            #[cfg(windows)]
+            {
+                use std::os::windows::ffi::OsStrExt;
+                let wide: Vec<u16> = std::ffi::OsStr::new("com.melosync.desktop")
+                    .encode_wide()
+                    .chain(std::iter::once(0))
+                    .collect();
+                unsafe {
+                    extern "system" {
+                        fn SetCurrentProcessExplicitAppUserModelID(app_id: *const u16) -> i32;
+                    }
+                    let _ = SetCurrentProcessExplicitAppUserModelID(wide.as_ptr());
+                }
+            }
+
+            // Forzar el título limpio 'meloSync' y la aplicación del icono en la ventana y barra de tareas
             if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_title("meloSync");
                 if let Some(icon) = app.default_window_icon() {
                     let _ = window.set_icon(icon.clone());
                 }

@@ -15,6 +15,7 @@ from .routers import (
     downloads_router,
     library_router,
     metadata_router,
+    playlists_router,
     search_router,
     settings_router,
 )
@@ -47,6 +48,16 @@ async def lifespan(app: FastAPI):
     ws_manager.set_event_loop(loop)
     container = get_container()
     logger.info("Database and Worker thread pool initialized.")
+
+    # Run smart playlists sync in background thread without blocking startup
+    async def _sync_smart_bg():
+        try:
+            await asyncio.to_thread(container.get_sync_smart_playlists_use_case().execute)
+        except Exception as e:
+            logger.warning("Background smart playlists sync encountered an error: %s", e)
+
+    asyncio.create_task(_sync_smart_bg())
+
     yield
     logger.info("Shutting down meloSync...")
     container.task_executor.shutdown()
@@ -84,6 +95,7 @@ def create_app() -> FastAPI:
     app.include_router(downloads_router, prefix=api_v1_prefix)
     app.include_router(library_router, prefix=api_v1_prefix)
     app.include_router(metadata_router, prefix=api_v1_prefix)
+    app.include_router(playlists_router, prefix=api_v1_prefix)
     app.include_router(settings_router, prefix=api_v1_prefix)
 
     # Mount WebSocket router

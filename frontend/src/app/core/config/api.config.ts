@@ -11,5 +11,11 @@ export const API_CONFIG = {
     cover: (id: string) => `/api/v1/library/${id}/cover`,
     openFile: (id: string) => `/api/v1/library/${id}/open-file`,
     openFolder: (id: string) => `/api/v1/library/${id}/open-folder`,
+    recordPlay: (id: string) => `/api/v1/library/${id}/record-play`,
+    playlists: '/api/v1/playlists',
+    playlistDetail: (id: string) => `/api/v1/playlists/${id}`,
+    playlistTracks: (id: string) => `/api/v1/playlists/${id}/tracks`,
+    playlistTrackDelete: (playlistId: string, trackId: string) => `/api/v1/playlists/${playlistId}/tracks/${trackId}`,
+    playlistsSync: '/api/v1/playlists/sync-smart',
   }
 };

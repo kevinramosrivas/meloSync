@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Optional
+import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from ...domain.entities import AppSettings, DownloadStatus, Playlist, Track
+from ...domain.entities import AppSettings, DownloadStatus, Playlist, Track, utc_now
 from ...domain.repositories import (
     IPlaylistRepository,
     ISettingsRepository,
@@ -17,6 +19,7 @@ from .database import (
     PlaylistModel,
     SettingsModel,
     TrackModel,
+    TrackPlayHistoryModel,
 )
 
 
@@ -63,6 +66,8 @@ class SqlAlchemyTrackRepository(ITrackRepository):
         model.duration_seconds = track.duration_seconds
         model.original_title = track.original_title
         model.channel_name = track.channel_name
+        model.play_count = track.play_count
+        model.last_played_at = track.last_played_at
 
         if track.metadata:
             model.meta_title = track.metadata.title
@@ -88,6 +93,53 @@ class SqlAlchemyTrackRepository(ITrackRepository):
             return True
         return False
 
+    def record_play(self, track_id: str) -> None:
+        model = self._session.get(TrackModel, track_id)
+        if model:
+            model.play_count = (model.play_count or 0) + 1
+            now = utc_now()
+            model.last_played_at = now
+            history_entry = TrackPlayHistoryModel(
+                id=str(uuid.uuid4()),
+                track_id=track_id,
+                played_at=now,
+            )
+            self._session.add(history_entry)
+            self._session.flush()
+
+    def get_top_played(self, limit: int = 50) -> list[Track]:
+        stmt = (
+            select(TrackModel)
+            .where(TrackModel.status == DownloadStatus.COMPLETADA.value)
+            .where(TrackModel.play_count > 0)
+            .order_by(TrackModel.play_count.desc(), TrackModel.last_played_at.desc())
+            .limit(limit)
+        )
+        models = self._session.execute(stmt).scalars().all()
+        return [m.to_domain() for m in models]
+
+    def get_on_repeat(self, days: int = 30, min_repeats: int = 2, limit: int = 30) -> list[Track]:
+        cutoff = utc_now() - timedelta(days=days)
+        stmt = (
+            select(TrackPlayHistoryModel.track_id, func.count(TrackPlayHistoryModel.id).label("repeat_count"))
+            .where(TrackPlayHistoryModel.played_at >= cutoff)
+            .group_by(TrackPlayHistoryModel.track_id)
+            .having(func.count(TrackPlayHistoryModel.id) >= min_repeats)
+            .order_by(func.count(TrackPlayHistoryModel.id).desc())
+            .limit(limit)
+        )
+        rows = self._session.execute(stmt).all()
+        if not rows:
+            return []
+
+        track_ids = [r[0] for r in rows]
+        tracks_stmt = select(TrackModel).where(
+            TrackModel.id.in_(track_ids),
+            TrackModel.status == DownloadStatus.COMPLETADA.value,
+        )
+        track_models = {m.id: m.to_domain() for m in self._session.execute(tracks_stmt).scalars().all()}
+        return [track_models[tid] for tid in track_ids if tid in track_models]
+
 
 class SqlAlchemyPlaylistRepository(IPlaylistRepository):
     """SQLAlchemy implementation of IPlaylistRepository."""
@@ -100,6 +152,10 @@ class SqlAlchemyPlaylistRepository(IPlaylistRepository):
             id=playlist.id,
             name=playlist.name,
             description=playlist.description,
+            is_smart=playlist.is_smart,
+            playlist_type=playlist.playlist_type,
+            filter_query=playlist.filter_query,
+            cover_url=playlist.cover_url,
             created_at=playlist.created_at,
             updated_at=playlist.updated_at,
         )
@@ -121,6 +177,24 @@ class SqlAlchemyPlaylistRepository(IPlaylistRepository):
         models = self._session.execute(stmt).scalars().all()
         return [m.to_domain() for m in models]
 
+    def list_by_type(self, playlist_type: str) -> list[Playlist]:
+        stmt = (
+            select(PlaylistModel)
+            .where(PlaylistModel.playlist_type == playlist_type)
+            .order_by(PlaylistModel.name.asc())
+        )
+        models = self._session.execute(stmt).scalars().all()
+        return [m.to_domain() for m in models]
+
+    def get_by_filter(self, playlist_type: str, filter_query: str) -> Optional[Playlist]:
+        stmt = (
+            select(PlaylistModel)
+            .where(PlaylistModel.playlist_type == playlist_type)
+            .where(PlaylistModel.filter_query == filter_query)
+        )
+        model = self._session.execute(stmt).scalar_one_or_none()
+        return model.to_domain() if model else None
+
     def update(self, playlist: Playlist) -> Playlist:
         model = self._session.get(PlaylistModel, playlist.id)
         if not model:
@@ -128,6 +202,10 @@ class SqlAlchemyPlaylistRepository(IPlaylistRepository):
 
         model.name = playlist.name
         model.description = playlist.description
+        model.is_smart = playlist.is_smart
+        model.playlist_type = playlist.playlist_type
+        model.filter_query = playlist.filter_query
+        model.cover_url = playlist.cover_url
         model.updated_at = playlist.updated_at
 
         if playlist.tracks is not None:

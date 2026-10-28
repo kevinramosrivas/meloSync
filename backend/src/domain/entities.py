@@ -149,6 +149,8 @@ class Track:
     file_path: Optional[str] = None
     error_message: Optional[str] = None
     metadata: Optional[TrackMetadata] = None
+    play_count: int = 0
+    last_played_at: Optional[datetime] = None
     created_at: datetime = field(default_factory=utc_now)
     updated_at: datetime = field(default_factory=utc_now)
 
@@ -242,6 +244,10 @@ class Playlist:
     name: str
     description: str = ""
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    is_smart: bool = False
+    playlist_type: str = "custom"  # "custom" | "top_played" | "on_repeat" | "artist" | "genre"
+    filter_query: Optional[str] = None
+    cover_url: Optional[str] = None
     tracks: list[Track] = field(default_factory=list)
     created_at: datetime = field(default_factory=utc_now)
     updated_at: datetime = field(default_factory=utc_now)

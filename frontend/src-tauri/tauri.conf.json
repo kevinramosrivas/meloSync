@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "meloSync — Gestor Inteligente de Música",
+        "title": "meloSync",
         "width": 1280,
         "height": 840,
         "minWidth": 960,

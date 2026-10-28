@@ -1,0 +1,658 @@
+<div 
+  class="flex flex-col h-full w-full overflow-y-auto px-6 py-6 lg:px-8 lg:py-7 gap-7 select-none"
+  (click)="closeMenu()"
+>
+  <!-- Top Navigation & Action Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-white/[0.08]">
+    <div class="flex flex-col gap-1 min-w-0">
+      <div class="flex items-center gap-2.5">
+        <h1 class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
+          Playlists
+        </h1>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/[0.08] text-zinc-300 border border-white/[0.06]">
+          Colecciones & Hábitos
+        </span>
+      </div>
+      <p class="text-xs sm:text-sm text-zinc-400">
+        Tus selecciones manuales, rankings de reproducciones y mixes generados en background.
+      </p>
+    </div>
+
+    <!-- Header Actions -->
+    <div class="flex items-center gap-2.5 shrink-0">
+      <button
+        type="button"
+        class="flex items-center gap-2 h-10 px-4 rounded-xl text-xs sm:text-sm font-semibold text-zinc-300 hover:text-white bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+        (click)="syncSmartPlaylists()"
+        [disabled]="isSyncing()"
+        title="Sincronizar mixes inteligentes de artistas y géneros con tu biblioteca"
+      >
+        <app-icon name="refresh" [size]="16" [class.animate-spin]="isSyncing()" />
+        <span>{{ isSyncing() ? 'Sincronizando...' : 'Sincronizar Mixes' }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="flex items-center gap-2 h-10 px-5 rounded-xl text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-[#fa2d48] to-[#ff385c] hover:opacity-95 shadow-lg shadow-[#fa2d48]/25 transition-all cursor-pointer active:scale-95"
+        (click)="openCreateModal()"
+      >
+        <app-icon name="list-music" [size]="16" />
+        <span>Crear Playlist</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Search & Category Filter Toolbar -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <!-- Quick Search Bar -->
+    <div class="flex items-center gap-2.5 rounded-xl border border-white/[0.08] bg-[#14141c]/90 px-3.5 py-2.5 focus-within:border-[#fa2d48] focus-within:bg-[#181824] transition-all w-full md:w-80 lg:w-96 shadow-sm">
+      <app-icon name="search" [size]="16" class="text-zinc-400 shrink-0" />
+      <input 
+        type="text" 
+        [ngModel]="searchQuery()" 
+        (ngModelChange)="searchQuery.set($event)" 
+        placeholder="Buscar listas, artistas, géneros..." 
+        class="flex-1 bg-transparent text-xs sm:text-sm text-white outline-none placeholder:text-zinc-500 font-sans min-w-0"
+      />
+      @if (searchQuery()) {
+        <button 
+          class="flex items-center justify-center p-0.5 text-zinc-400 hover:text-white transition-colors cursor-pointer shrink-0" 
+          type="button" 
+          (click)="clearSearch()" 
+          title="Limpiar búsqueda"
+        >
+          <app-icon name="x" [size]="14" />
+        </button>
+      }
+    </div>
+
+    <!-- Category Chips Navigation -->
+    <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none shrink-0">
+      <button
+        type="button"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border whitespace-nowrap active:scale-95"
+        [class.bg-[#fa2d48]/20]="activeCategory() === 'all'"
+        [class.text-[#fa2d48]]="activeCategory() === 'all'"
+        [class.border-[#fa2d48]/40]="activeCategory() === 'all'"
+        [class.bg-white/[0.04]]="activeCategory() !== 'all'"
+        [class.text-zinc-400]="activeCategory() !== 'all'"
+        [class.hover:text-white]="activeCategory() !== 'all'"
+        [class.hover:bg-white/[0.08]]="activeCategory() !== 'all'"
+        [class.border-white/[0.06]]="activeCategory() !== 'all'"
+        (click)="setCategory('all')"
+      >
+        <span>Todas</span>
+        <span class="text-[10px] opacity-75 font-bold">({{ totalAllCount() }})</span>
+      </button>
+
+      <button
+        type="button"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border whitespace-nowrap active:scale-95"
+        [class.bg-[#fa2d48]/20]="activeCategory() === 'user'"
+        [class.text-[#fa2d48]]="activeCategory() === 'user'"
+        [class.border-[#fa2d48]/40]="activeCategory() === 'user'"
+        [class.bg-white/[0.04]]="activeCategory() !== 'user'"
+        [class.text-zinc-400]="activeCategory() !== 'user'"
+        [class.hover:text-white]="activeCategory() !== 'user'"
+        [class.hover:bg-white/[0.08]]="activeCategory() !== 'user'"
+        [class.border-white/[0.06]]="activeCategory() !== 'user'"
+        (click)="setCategory('user')"
+      >
+        <span>Tus Listas</span>
+        <span class="text-[10px] opacity-75 font-bold">({{ userPlaylists().length }})</span>
+      </button>
+
+      @if (forYouPlaylists().length > 0) {
+        <button
+          type="button"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border whitespace-nowrap active:scale-95"
+          [class.bg-[#fa2d48]/20]="activeCategory() === 'for_you'"
+          [class.text-[#fa2d48]]="activeCategory() === 'for_you'"
+          [class.border-[#fa2d48]/40]="activeCategory() === 'for_you'"
+          [class.bg-white/[0.04]]="activeCategory() !== 'for_you'"
+          [class.text-zinc-400]="activeCategory() !== 'for_you'"
+          [class.hover:text-white]="activeCategory() !== 'for_you'"
+          [class.hover:bg-white/[0.08]]="activeCategory() !== 'for_you'"
+          [class.border-white/[0.06]]="activeCategory() !== 'for_you'"
+          (click)="setCategory('for_you')"
+        >
+          <span>Para ti</span>
+          <span class="text-[10px] opacity-75 font-bold">({{ forYouPlaylists().length }})</span>
+        </button>
+      }
+
+      @if (artistPlaylists().length > 0) {
+        <button
+          type="button"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border whitespace-nowrap active:scale-95"
+          [class.bg-[#fa2d48]/20]="activeCategory() === 'artist'"
+          [class.text-[#fa2d48]]="activeCategory() === 'artist'"
+          [class.border-[#fa2d48]/40]="activeCategory() === 'artist'"
+          [class.bg-white/[0.04]]="activeCategory() !== 'artist'"
+          [class.text-zinc-400]="activeCategory() !== 'artist'"
+          [class.hover:text-white]="activeCategory() !== 'artist'"
+          [class.hover:bg-white/[0.08]]="activeCategory() !== 'artist'"
+          [class.border-white/[0.06]]="activeCategory() !== 'artist'"
+          (click)="setCategory('artist')"
+        >
+          <span>Artistas</span>
+          <span class="text-[10px] opacity-75 font-bold">({{ artistPlaylists().length }})</span>
+        </button>
+      }
+
+      @if (genrePlaylists().length > 0) {
+        <button
+          type="button"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border whitespace-nowrap active:scale-95"
+          [class.bg-[#fa2d48]/20]="activeCategory() === 'genre'"
+          [class.text-[#fa2d48]]="activeCategory() === 'genre'"
+          [class.border-[#fa2d48]/40]="activeCategory() === 'genre'"
+          [class.bg-white/[0.04]]="activeCategory() !== 'genre'"
+          [class.text-zinc-400]="activeCategory() !== 'genre'"
+          [class.hover:text-white]="activeCategory() !== 'genre'"
+          [class.hover:bg-white/[0.08]]="activeCategory() !== 'genre'"
+          [class.border-white/[0.06]]="activeCategory() !== 'genre'"
+          (click)="setCategory('genre')"
+        >
+          <span>Géneros</span>
+          <span class="text-[10px] opacity-75 font-bold">({{ genrePlaylists().length }})</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="flex flex-col items-center justify-center py-24 gap-3 text-zinc-400">
+      <div class="h-8 w-8 rounded-full border-2 border-zinc-700 border-t-[#fa2d48] animate-spin"></div>
+      <span class="text-xs font-medium">Cargando tus listas de música...</span>
+    </div>
+  } @else if (searchQuery() && totalFilteredCount() === 0) {
+    <!-- Empty Search State -->
+    <div class="flex flex-col items-center justify-center py-20 px-4 text-center">
+      <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.04] border border-white/[0.08] text-zinc-500 mb-4">
+        <app-icon name="search" [size]="28" />
+      </div>
+      <h3 class="text-base font-bold text-white mb-1">
+        No se encontraron listas ni artistas
+      </h3>
+      <p class="text-xs text-zinc-400 max-w-sm mb-4">
+        No encontramos ningún resultado para "<span class="text-zinc-200 font-medium">{{ searchQuery() }}</span>" en la categoría seleccionada.
+      </p>
+      <button
+        type="button"
+        class="flex items-center gap-2 h-9 px-4 rounded-xl text-xs font-semibold text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] transition-all cursor-pointer active:scale-95"
+        (click)="clearSearch()"
+      >
+        <app-icon name="x" [size]="14" />
+        <span>Limpiar búsqueda</span>
+      </button>
+    </div>
+  } @else {
+    <!-- ========================================== -->
+    <!-- NIVEL 1: TUS LISTAS (ALTA PRIORIDAD)       -->
+    <!-- ========================================== -->
+    @if ((activeCategory() === 'all' || activeCategory() === 'user') && (filteredUserPlaylists().length > 0 || (!searchQuery() && userPlaylists().length === 0))) {
+      <section class="flex flex-col gap-3.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <h2 class="text-lg lg:text-xl font-bold text-white tracking-tight">
+              Tus Listas
+            </h2>
+            <span class="text-xs text-zinc-500 font-semibold">
+              ({{ filteredUserPlaylists().length }})
+            </span>
+          </div>
+          <span class="text-xs text-zinc-400">Creadas por ti</span>
+        </div>
+
+        @if (userPlaylists().length === 0 && !searchQuery()) {
+          <!-- Empty State for User Playlists -->
+          <div class="flex flex-col sm:flex-row items-center justify-between p-6 rounded-2xl bg-gradient-to-r from-white/[0.04] to-white/[0.01] border border-white/[0.08] gap-4">
+            <div class="flex items-center gap-4">
+              <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/[0.06] border border-white/[0.08] text-[#fa2d48]">
+                <app-icon name="list-music" [size]="24" />
+              </div>
+              <div class="flex flex-col">
+                <h3 class="text-sm font-bold text-white">Aún no tienes listas personalizadas</h3>
+                <p class="text-xs text-zinc-400">Crea tu primera lista para organizar tus canciones favoritas a tu gusto.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="h-9 px-4 rounded-xl text-xs font-semibold text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] transition-all cursor-pointer whitespace-nowrap active:scale-95"
+              (click)="openCreateModal()"
+            >
+              + Crear mi primera lista
+            </button>
+          </div>
+        } @else if (filteredUserPlaylists().length > 0) {
+          <!-- Grid of User Playlists (Standardized auto-fill minmax 180px) -->
+          <div class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4 sm:gap-4.5 w-full">
+            @for (playlist of filteredUserPlaylists(); track playlist.id) {
+              <div 
+                class="group relative flex flex-col p-2.5 sm:p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-200 cursor-pointer shadow-sm hover:shadow-xl hover:shadow-black/40"
+                [class.!border-[#fa2d48]/40]="isPlaylistActive(playlist.id)"
+                [class.!bg-[#fa2d48]/[0.05]]="isPlaylistActive(playlist.id)"
+                (click)="navigateToPlaylist(playlist.id)"
+              >
+                <!-- Cover Container with 2x2 Mosaic support -->
+                <div class="relative aspect-square w-full rounded-xl overflow-hidden bg-zinc-900 border border-white/[0.06] shadow-md group-hover:scale-[1.02] transition-transform duration-200">
+                  @if (isPlaylistActive(playlist.id)) {
+                    <!-- Equalizer badge on currently playing playlist cover -->
+                    <div class="absolute top-2 left-2 z-20 flex items-center justify-center p-1.5 rounded-lg bg-black/80 backdrop-blur-md border border-white/10 shadow-lg">
+                      <app-equalizer-indicator [isPlaying]="player.isPlaying()" [size]="12" />
+                    </div>
+                  }
+
+                  @if (playlist.sample_cover_track_ids && playlist.sample_cover_track_ids.length >= 4) {
+                    <!-- 2x2 Dynamic Mosaic -->
+                    <div class="grid grid-cols-2 grid-rows-2 h-full w-full">
+                      @for (tid of playlist.sample_cover_track_ids.slice(0, 4); track tid) {
+                        <img 
+                          [src]="getCoverUrl(tid)" 
+                          alt="Mosaic Cover" 
+                          class="h-full w-full object-cover" 
+                          loading="lazy"
+                          onerror="this.style.display='none'"
+                        />
+                      }
+                    </div>
+                  } @else if (playlist.sample_cover_track_ids && playlist.sample_cover_track_ids.length > 0) {
+                    <!-- Single Track Cover -->
+                    <img 
+                      [src]="getCoverUrl(playlist.sample_cover_track_ids[0])" 
+                      alt="{{ playlist.name }}" 
+                      class="h-full w-full object-cover" 
+                      loading="lazy"
+                      onerror="this.style.display='none'"
+                    />
+                  } @else {
+                    <!-- Fallback Sleek Music Icon -->
+                    <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-zinc-500">
+                      <app-icon name="list-music" [size]="28" />
+                    </div>
+                  }
+
+                  <!-- Quick Play Button Hover Overlay -->
+                  <button
+                    type="button"
+                    class="absolute bottom-2.5 right-2.5 flex h-9 w-9 items-center justify-center rounded-full bg-[#fa2d48] text-white shadow-lg shadow-black/50 transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer z-10"
+                    [class.opacity-100]="isPlaylistActive(playlist.id)"
+                    [class.translate-y-0]="isPlaylistActive(playlist.id)"
+                    [class.opacity-0]="!isPlaylistActive(playlist.id)"
+                    [class.translate-y-2]="!isPlaylistActive(playlist.id)"
+                    [class.group-hover:opacity-100]="true"
+                    [class.group-hover:translate-y-0]="true"
+                    (click)="playPlaylistQuick(playlist, $event)"
+                    [title]="isPlaylistPlaying(playlist.id) ? 'Pausar lista' : 'Reproducir lista'"
+                  >
+                    <app-icon [name]="isPlaylistPlaying(playlist.id) ? 'pause' : 'play'" [size]="16" />
+                  </button>
+                </div>
+
+                <!-- Playlist Info Row -->
+                <div class="flex items-start justify-between gap-1 pt-2">
+                  <div class="flex flex-col min-w-0">
+                    <h3 
+                      class="text-xs sm:text-sm font-bold truncate transition-colors"
+                      [class.!text-[#fa2d48]]="isPlaylistActive(playlist.id)"
+                      [class.text-white]="!isPlaylistActive(playlist.id)"
+                      [class.group-hover:text-[#fa2d48]]="true"
+                    >
+                      {{ playlist.name }}
+                    </h3>
+                    <span class="text-[11px] text-zinc-400 truncate mt-0.5">
+                      {{ playlist.track_count }} {{ playlist.track_count === 1 ? 'canción' : 'canciones' }}
+                    </span>
+                  </div>
+
+                  <!-- Dropdown Trigger Button -->
+                  <div class="relative shrink-0">
+                    <button
+                      type="button"
+                      class="flex h-6 w-6 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
+                      (click)="toggleMenu(playlist.id, $event)"
+                      title="Opciones"
+                    >
+                      <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                      </svg>
+                    </button>
+
+                    <!-- Options Dropdown Menu -->
+                    @if (activeMenuId() === playlist.id) {
+                      <div 
+                        class="absolute right-0 top-7 z-30 w-36 rounded-xl bg-[#1c1c26] border border-white/[0.12] shadow-2xl p-1 flex flex-col gap-0.5 text-xs text-zinc-200 select-none animate-in fade-in-50 duration-100"
+                        (click)="$event.stopPropagation()"
+                      >
+                        <button
+                          type="button"
+                          class="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer text-left"
+                          (click)="openEditModal(playlist, $event)"
+                        >
+                          <app-icon name="pencil" [size]="13" />
+                          <span>Editar</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors cursor-pointer text-left"
+                          (click)="deletePlaylist(playlist, $event)"
+                        >
+                          <app-icon name="trash" [size]="13" />
+                          <span>Eliminar</span>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <!-- ========================================== -->
+    <!-- NIVEL 2: ESPECIALMENTE PARA TI (HÁBITOS)   -->
+    <!-- ========================================== -->
+    @if ((activeCategory() === 'all' || activeCategory() === 'for_you') && filteredForYouPlaylists().length > 0) {
+      <section class="flex flex-col gap-3.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <h2 class="text-lg lg:text-xl font-bold text-white tracking-tight">
+              Especialmente para ti
+            </h2>
+            <span class="text-xs text-zinc-500 font-semibold">
+              ({{ filteredForYouPlaylists().length }})
+            </span>
+          </div>
+          <span class="text-xs text-zinc-400">Algorítmico</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          @for (playlist of filteredForYouPlaylists(); track playlist.id) {
+            @if (playlist.playlist_type === 'top_played') {
+              <!-- Más Escuchadas (Top Played) Feature Card -->
+              <div 
+                class="relative flex flex-col sm:flex-row items-center rounded-2xl p-4 sm:p-4.5 bg-gradient-to-br from-amber-950/40 via-rose-950/40 to-black/60 border border-rose-500/20 hover:border-rose-500/40 shadow-xl shadow-rose-950/20 hover:shadow-rose-900/30 transition-all duration-200 cursor-pointer overflow-hidden group"
+                [class.!border-rose-500/60]="isPlaylistActive(playlist.id)"
+                (click)="navigateToPlaylist(playlist.id)"
+              >
+                <!-- Decorative Neon Glow -->
+                <div class="absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-rose-600/20 blur-3xl pointer-events-none"></div>
+
+                <!-- Artwork / Icon Visual -->
+                <div class="relative flex h-20 w-20 sm:h-22 sm:w-22 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-amber-500 text-white shadow-xl shadow-rose-600/30 group-hover:scale-105 transition-transform duration-200">
+                  @if (isPlaylistActive(playlist.id)) {
+                    <div class="absolute top-1.5 left-1.5 z-20 flex items-center justify-center p-1 rounded-md bg-black/80 backdrop-blur-md border border-white/10 shadow-lg">
+                      <app-equalizer-indicator [isPlaying]="player.isPlaying()" [size]="12" />
+                    </div>
+                  }
+                  <app-icon name="sparkles" [size]="34" />
+                </div>
+
+                <!-- Content Details -->
+                <div class="flex flex-col flex-1 min-w-0 pt-2.5 sm:pt-0 sm:pl-4">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                      TOP RANKING
+                    </span>
+                    <span class="text-[11.5px] text-zinc-400">{{ playlist.track_count }} canciones</span>
+                  </div>
+                  <h3 
+                    class="text-base sm:text-lg font-black tracking-tight mt-0.5 transition-colors"
+                    [class.!text-rose-400]="isPlaylistActive(playlist.id)"
+                    [class.text-white]="!isPlaylistActive(playlist.id)"
+                    [class.group-hover:text-rose-400]="true"
+                  >
+                    {{ playlist.name }}
+                  </h3>
+                  <p class="text-xs text-zinc-300 line-clamp-1 mt-0.5">
+                    {{ playlist.description }}
+                  </p>
+                  <div class="flex items-center gap-3 mt-2.5">
+                    <button
+                      type="button"
+                      class="flex items-center gap-1.5 h-7.5 px-3.5 rounded-lg text-xs font-semibold text-white bg-white/[0.12] hover:bg-white/[0.2] border border-white/[0.1] active:scale-95 transition-all cursor-pointer"
+                      (click)="playPlaylistQuick(playlist, $event)"
+                    >
+                      <app-icon [name]="isPlaylistPlaying(playlist.id) ? 'pause' : 'play'" [size]="12" />
+                      <span>{{ isPlaylistPlaying(playlist.id) ? 'Pausar' : (isPlaylistActive(playlist.id) ? 'Reanudar' : 'Reproducir') }}</span>
+                    </button>
+                    <span class="text-xs text-zinc-400 font-medium">
+                      {{ formatDuration(playlist.duration_seconds) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            } @else if (playlist.playlist_type === 'on_repeat') {
+              <!-- En Bucle (On Repeat) Feature Card -->
+              <div 
+                class="relative flex flex-col sm:flex-row items-center rounded-2xl p-4 sm:p-4.5 bg-gradient-to-br from-teal-950/40 via-emerald-950/40 to-black/60 border border-emerald-500/20 hover:border-emerald-500/40 shadow-xl shadow-emerald-950/20 hover:shadow-emerald-900/30 transition-all duration-200 cursor-pointer overflow-hidden group"
+                [class.!border-emerald-500/60]="isPlaylistActive(playlist.id)"
+                (click)="navigateToPlaylist(playlist.id)"
+              >
+                <!-- Decorative Neon Glow -->
+                <div class="absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-emerald-600/20 blur-3xl pointer-events-none"></div>
+
+                <!-- Artwork / Icon Visual -->
+                <div class="relative flex h-20 w-20 sm:h-22 sm:w-22 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-xl shadow-emerald-600/30 group-hover:scale-105 transition-transform duration-200">
+                  @if (isPlaylistActive(playlist.id)) {
+                    <div class="absolute top-1.5 left-1.5 z-20 flex items-center justify-center p-1 rounded-md bg-black/80 backdrop-blur-md border border-white/10 shadow-lg">
+                      <app-equalizer-indicator [isPlaying]="player.isPlaying()" [size]="12" />
+                    </div>
+                  }
+                  <app-icon name="repeat" [size]="34" />
+                </div>
+
+                <!-- Content Details -->
+                <div class="flex flex-col flex-1 min-w-0 pt-2.5 sm:pt-0 sm:pl-4">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      ÚLTIMOS 30 DÍAS
+                    </span>
+                    <span class="text-[11.5px] text-zinc-400">{{ playlist.track_count }} canciones</span>
+                  </div>
+                  <h3 
+                    class="text-base sm:text-lg font-black tracking-tight mt-0.5 transition-colors"
+                    [class.!text-emerald-400]="isPlaylistActive(playlist.id)"
+                    [class.text-white]="!isPlaylistActive(playlist.id)"
+                    [class.group-hover:text-emerald-400]="true"
+                  >
+                    {{ playlist.name }}
+                  </h3>
+                  <p class="text-xs text-zinc-300 line-clamp-1 mt-0.5">
+                    {{ playlist.description }}
+                  </p>
+                  <div class="flex items-center gap-3 mt-2.5">
+                    <button
+                      type="button"
+                      class="flex items-center gap-1.5 h-7.5 px-3.5 rounded-lg text-xs font-semibold text-white bg-white/[0.12] hover:bg-white/[0.2] border border-white/[0.1] active:scale-95 transition-all cursor-pointer"
+                      (click)="playPlaylistQuick(playlist, $event)"
+                    >
+                      <app-icon [name]="isPlaylistPlaying(playlist.id) ? 'pause' : 'play'" [size]="12" />
+                      <span>{{ isPlaylistPlaying(playlist.id) ? 'Pausar' : (isPlaylistActive(playlist.id) ? 'Reanudar' : 'Reproducir') }}</span>
+                    </button>
+                    <span class="text-xs text-zinc-400 font-medium">
+                      {{ formatDuration(playlist.duration_seconds) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </section>
+    }
+
+    <!-- ========================================== -->
+    <!-- NIVEL 3: MIXES POR ARTISTA (UNIFORMES)     -->
+    <!-- ========================================== -->
+    @if ((activeCategory() === 'all' || activeCategory() === 'artist') && filteredArtistPlaylists().length > 0) {
+      <section class="flex flex-col gap-3.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <h2 class="text-lg lg:text-xl font-bold text-white tracking-tight">
+              Mixes por Artista
+            </h2>
+            <span class="text-xs text-zinc-500 font-semibold">
+              ({{ filteredArtistPlaylists().length }})
+            </span>
+          </div>
+          <span class="text-xs text-zinc-400">Fotos oficiales de artistas</span>
+        </div>
+
+        <!-- Grid of Artist Mixes (Standardized auto-fill minmax 180px) -->
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4 sm:gap-4.5 w-full">
+          @for (playlist of filteredArtistPlaylists(); track playlist.id) {
+            <div 
+              class="group relative flex flex-col p-2.5 sm:p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-200 cursor-pointer shadow-sm hover:shadow-xl hover:shadow-black/40"
+              [class.!border-[#fa2d48]/40]="isPlaylistActive(playlist.id)"
+              [class.!bg-[#fa2d48]/[0.05]]="isPlaylistActive(playlist.id)"
+              (click)="navigateToPlaylist(playlist.id)"
+            >
+              <!-- Squircle Full-Width Cover Container -->
+              <div class="relative aspect-square w-full rounded-xl overflow-hidden bg-zinc-900 border border-white/[0.06] shadow-md group-hover:scale-[1.02] transition-transform duration-200">
+                @if (isPlaylistActive(playlist.id)) {
+                  <!-- Equalizer badge on currently playing artist mix cover -->
+                  <div class="absolute top-2 left-2 z-20 flex items-center justify-center p-1.5 rounded-lg bg-black/80 backdrop-blur-md border border-white/10 shadow-lg">
+                    <app-equalizer-indicator [isPlaying]="player.isPlaying()" [size]="12" />
+                  </div>
+                }
+
+                @if (playlist.cover_url) {
+                  <img 
+                    [src]="playlist.cover_url" 
+                    alt="{{ playlist.name }}" 
+                    class="h-full w-full object-cover" 
+                    loading="lazy"
+                    onerror="this.style.display='none'"
+                  />
+                } @else if (playlist.sample_cover_track_ids && playlist.sample_cover_track_ids.length > 0) {
+                  <img 
+                    [src]="getCoverUrl(playlist.sample_cover_track_ids[0])" 
+                    alt="{{ playlist.name }}" 
+                    class="h-full w-full object-cover" 
+                    loading="lazy"
+                    onerror="this.style.display='none'"
+                  />
+                } @else {
+                  <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-zinc-500">
+                    <app-icon name="headphones" [size]="28" />
+                  </div>
+                }
+
+                <!-- Quick Play Button Hover Overlay (Floating Bottom-Right, not on face) -->
+                <button
+                  type="button"
+                  class="absolute bottom-2.5 right-2.5 flex h-9 w-9 items-center justify-center rounded-full bg-[#fa2d48] text-white shadow-xl shadow-black/60 transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer z-10"
+                  [class.opacity-100]="isPlaylistActive(playlist.id)"
+                  [class.translate-y-0]="isPlaylistActive(playlist.id)"
+                  [class.opacity-0]="!isPlaylistActive(playlist.id)"
+                  [class.translate-y-2]="!isPlaylistActive(playlist.id)"
+                  [class.group-hover:opacity-100]="true"
+                  [class.group-hover:translate-y-0]="true"
+                  (click)="playPlaylistQuick(playlist, $event)"
+                  [title]="isPlaylistPlaying(playlist.id) ? 'Pausar mix' : 'Reproducir mix'"
+                >
+                  <app-icon [name]="isPlaylistPlaying(playlist.id) ? 'pause' : 'play'" [size]="16" />
+                </button>
+              </div>
+
+              <!-- Artist Info Row -->
+              <div class="flex flex-col min-w-0 pt-2">
+                <h3 
+                  class="text-xs sm:text-sm font-bold truncate transition-colors"
+                  [class.!text-[#fa2d48]]="isPlaylistActive(playlist.id)"
+                  [class.text-white]="!isPlaylistActive(playlist.id)"
+                  [class.group-hover:text-[#fa2d48]]="true"
+                >
+                  {{ playlist.filter_query || playlist.name }}
+                </h3>
+                <span class="text-[11px] text-zinc-400 truncate mt-0.5">
+                  {{ playlist.track_count }} {{ playlist.track_count === 1 ? 'canción' : 'canciones' }}
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- ========================================== -->
+    <!-- NIVEL 4: MIXES POR GÉNERO (UNIFORMES)      -->
+    <!-- ========================================== -->
+    @if ((activeCategory() === 'all' || activeCategory() === 'genre') && filteredGenrePlaylists().length > 0) {
+      <section class="flex flex-col gap-3.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <h2 class="text-lg lg:text-xl font-bold text-white tracking-tight">
+              Mixes por Género
+            </h2>
+            <span class="text-xs text-zinc-500 font-semibold">
+              ({{ filteredGenrePlaylists().length }})
+            </span>
+          </div>
+          <span class="text-xs text-zinc-400">Etiquetas de tu biblioteca</span>
+        </div>
+
+        <!-- Grid of Genre Mixes (Standardized auto-fill minmax 180px) -->
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4 sm:gap-4.5 w-full">
+          @for (playlist of filteredGenrePlaylists(); track playlist.id) {
+            <div 
+              class="group relative flex flex-col justify-between p-3.5 rounded-2xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] hover:from-white/[0.08] hover:to-white/[0.03] border border-white/[0.06] hover:border-white/[0.14] transition-all duration-200 cursor-pointer shadow-sm hover:shadow-lg h-28 sm:h-30 overflow-hidden"
+              [class.!border-[#fa2d48]/40]="isPlaylistActive(playlist.id)"
+              (click)="navigateToPlaylist(playlist.id)"
+            >
+              <div class="flex items-start justify-between">
+                <div class="flex items-center gap-1.5">
+                  @if (isPlaylistActive(playlist.id)) {
+                    <div class="flex items-center justify-center p-1 rounded-md bg-black/80 backdrop-blur-md border border-white/10 shadow-sm">
+                      <app-equalizer-indicator [isPlaying]="player.isPlaying()" [size]="11" />
+                    </div>
+                  }
+                  <span class="px-2 py-0.5 rounded-md text-[10.5px] font-bold uppercase tracking-wider bg-white/[0.08] text-zinc-300">
+                    {{ playlist.filter_query || 'GÉNERO' }}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  class="flex h-7.5 w-7.5 items-center justify-center rounded-full bg-[#fa2d48] text-white shadow-md transition-all cursor-pointer active:scale-95"
+                  [class.opacity-100]="isPlaylistActive(playlist.id)"
+                  [class.opacity-0]="!isPlaylistActive(playlist.id)"
+                  [class.group-hover:opacity-100]="true"
+                  (click)="playPlaylistQuick(playlist, $event)"
+                  [title]="isPlaylistPlaying(playlist.id) ? 'Pausar mix de género' : 'Reproducir mix de género'"
+                >
+                  <app-icon [name]="isPlaylistPlaying(playlist.id) ? 'pause' : 'play'" [size]="13" />
+                </button>
+              </div>
+
+              <div class="flex flex-col">
+                <h3 
+                  class="text-sm font-black truncate tracking-tight transition-colors"
+                  [class.!text-[#fa2d48]]="isPlaylistActive(playlist.id)"
+                  [class.text-white]="!isPlaylistActive(playlist.id)"
+                  [class.group-hover:text-[#fa2d48]]="true"
+                >
+                  {{ playlist.name }}
+                </h3>
+                <span class="text-[11px] text-zinc-400 mt-0.5">
+                  {{ playlist.track_count }} canciones • {{ formatDuration(playlist.duration_seconds) }}
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+  }
+
+  <!-- Create / Edit Playlist Modal -->
+  <app-create-playlist-dialog
+    [isOpen]="isCreateModalOpen()"
+    [editPlaylist]="editingPlaylist()"
+    (close)="isCreateModalOpen.set(false)"
+    (saved)="onSavePlaylist($event)"
+  />
+</div>

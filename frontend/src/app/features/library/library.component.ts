@@ -18,6 +18,8 @@ import { CoverUrlPipe } from '../../shared/pipes/cover-url.pipe';
 import { MetadataDialogComponent } from '../metadata-editor/metadata-dialog.component';
 import { IconComponent } from '../../shared/components/icon/icon.component';
 import { EqualizerIndicatorComponent } from '../../shared/components/equalizer-indicator/equalizer-indicator.component';
+import { AddToPlaylistDialogComponent } from './components/add-to-playlist-dialog/add-to-playlist-dialog.component';
+import { TrackRowComponent } from '../../shared/components/track-row/track-row.component';
 
 @Component({
   selector: 'app-library',
@@ -27,7 +29,9 @@ import { EqualizerIndicatorComponent } from '../../shared/components/equalizer-i
     CoverUrlPipe,
     MetadataDialogComponent,
     IconComponent,
-    EqualizerIndicatorComponent
+    EqualizerIndicatorComponent,
+    AddToPlaylistDialogComponent,
+    TrackRowComponent
   ],
   templateUrl: './library.component.html'
 })
@@ -61,6 +65,14 @@ export class LibraryComponent implements OnInit {
   readonly hasRenderedCards = signal<boolean>(this.viewMode() === LIBRARY_VIEW_MODES.GRID);
 
   readonly selectedTrackForEdit = signal<Track | null>(null);
+  readonly selectedTrackForPlaylist = signal<Track | null>(null);
+  readonly isAddToPlaylistOpen = signal<boolean>(false);
+
+  openAddToPlaylist(track: Track, event: Event): void {
+    event.stopPropagation();
+    this.selectedTrackForPlaylist.set(track);
+    this.isAddToPlaylistOpen.set(true);
+  }
 
   readonly filteredTracks = computed(() => {
     return this.proximitySearch.searchTracks(this.tracks(), this.searchQuery());
@@ -136,6 +148,21 @@ export class LibraryComponent implements OnInit {
       this.player.togglePlay();
     } else {
       this.play(track);
+    }
+  }
+
+  playAll(shuffle: boolean = false): void {
+    const list = this.filteredTracks();
+    if (list.length === 0) return;
+
+    if (shuffle) {
+      if (!this.player.isShuffle()) {
+        this.player.toggleShuffle();
+      }
+      const randomIndex = Math.floor(Math.random() * list.length);
+      this.player.playTrack(list[randomIndex], list);
+    } else {
+      this.player.playTrack(list[0], list);
     }
   }
 

@@ -15,7 +15,13 @@ from .manage_library import (
 from .manage_playlists import (
     AddTrackToPlaylistUseCase,
     CreatePlaylistUseCase,
+    DeletePlaylistUseCase,
+    GetPlaylistByIdUseCase,
+    GetPlaylistsGroupedUseCase,
     GetPlaylistsUseCase,
+    RecordTrackPlayUseCase,
+    RemoveTrackFromPlaylistUseCase,
+    SyncSmartPlaylistsUseCase,
 )
 from .manage_settings import (
     GetSettingsUseCase,
@@ -27,16 +33,22 @@ from .sync_library import SyncLibraryUseCase, SyncReportDTO
 __all__ = [
     "AddTrackToPlaylistUseCase",
     "CreatePlaylistUseCase",
+    "DeletePlaylistUseCase",
     "DeleteTrackUseCase",
     "DownloadAndProcessTrackUseCase",
     "GetLibraryTracksUseCase",
+    "GetPlaylistByIdUseCase",
+    "GetPlaylistsGroupedUseCase",
     "GetPlaylistsUseCase",
     "GetSettingsUseCase",
     "GetTrackByIdUseCase",
+    "RecordTrackPlayUseCase",
+    "RemoveTrackFromPlaylistUseCase",
     "SearchMetadataCandidatesUseCase",
     "SearchYouTubeUseCase",
     "SyncLibraryUseCase",
     "SyncReportDTO",
+    "SyncSmartPlaylistsUseCase",
     "UpdateSettingsUseCase",
     "UpdateTrackMetadataUseCase",
 ]

@@ -44,6 +44,21 @@ class ITrackRepository(ABC):
         """Deletes a track record by its domain ID. Returns True if deleted."""
         raise NotImplementedError
 
+    @abstractmethod
+    def record_play(self, track_id: str) -> None:
+        """Records a playback event, incrementing play_count and logging play history."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_top_played(self, limit: int = 50) -> list[Track]:
+        """Returns completed tracks ordered by play count descending."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_on_repeat(self, days: int = 30, min_repeats: int = 2, limit: int = 30) -> list[Track]:
+        """Returns completed tracks frequently repeated in recent history window."""
+        raise NotImplementedError
+
 
 class IPlaylistRepository(ABC):
     """Abstract contract for Playlist persistence operations."""
@@ -61,6 +76,16 @@ class IPlaylistRepository(ABC):
     @abstractmethod
     def list_all(self) -> list[Playlist]:
         """Retrieves all playlists."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def list_by_type(self, playlist_type: str) -> list[Playlist]:
+        """Retrieves all playlists of a specific type."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_by_filter(self, playlist_type: str, filter_query: str) -> Optional[Playlist]:
+        """Retrieves a smart playlist matching type and filter query."""
         raise NotImplementedError
 
     @abstractmethod

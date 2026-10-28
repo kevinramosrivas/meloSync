@@ -39,6 +39,8 @@ export interface Track {
   file_exists?: boolean;
   error_message?: string | null;
   metadata?: TrackMetadata | null;
+  play_count?: number;
+  last_played_at_iso?: string | null;
   created_at_iso?: string;
   updated_at_iso?: string;
 }
