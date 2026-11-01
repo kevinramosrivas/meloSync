@@ -13,6 +13,7 @@ from ...domain.entities import DownloadStatus, Playlist, Track, utc_now
 from ...domain.exceptions import PlaylistNotFoundException, TrackNotFoundException
 from ...domain.repositories import IUnitOfWork
 from ...infrastructure.metadata.itunes_provider import ITunesMetadataProvider
+from ..services.genre_clustering import GenreClusterer
 
 logger = logging.getLogger(__name__)
 
@@ -267,8 +268,12 @@ class SyncSmartPlaylistsUseCase:
 
     def execute(self) -> None:
         logger.info("Starting smart playlists background synchronization...")
+
+        # ---------------------------------------------------------------------
+        # PHASE 1: Quick Database Read & Baseline Initialization (<5ms transaction)
+        # ---------------------------------------------------------------------
         with self._uow_factory() as uow:
-            # 1. Ensure 'Top Played' and 'On Repeat' exist
+            # Ensure 'Top Played' and 'On Repeat' exist
             top_played = uow.playlists.get_by_id(SMART_ID_TOP_PLAYED)
             if not top_played:
                 uow.playlists.add(
@@ -293,49 +298,79 @@ class SyncSmartPlaylistsUseCase:
                     )
                 )
 
-            # 2. Group completed tracks by individual artists and genre
             completed_tracks = uow.tracks.list_by_status(DownloadStatus.COMPLETADA)
-            artist_groups: dict[str, list[Track]] = defaultdict(list)
-            genre_groups: dict[str, list[Track]] = defaultdict(list)
+            existing_playlists = uow.playlists.list_all()
+            uow.commit()
 
-            for t in completed_tracks:
-                artist_raw = (t.metadata.artist if t.metadata and t.metadata.artist else t.display_artist).strip()
-                if artist_raw:
-                    individual_artists = self._extract_individual_artists(artist_raw)
-                    for art in individual_artists:
-                        if not any(existing.id == t.id for existing in artist_groups[art]):
-                            artist_groups[art].append(t)
+        # ---------------------------------------------------------------------
+        # PHASE 2: In-Memory Clustering & External Network Lookups (Zero DB Lock)
+        # ---------------------------------------------------------------------
+        # Group completed tracks by individual artists
+        artist_groups: dict[str, list[Track]] = defaultdict(list)
+        for t in completed_tracks:
+            artist_raw = (t.metadata.artist if t.metadata and t.metadata.artist else t.display_artist).strip()
+            if artist_raw:
+                individual_artists = self._extract_individual_artists(artist_raw)
+                for art in individual_artists:
+                    if not any(existing.id == t.id for existing in artist_groups[art]):
+                        artist_groups[art].append(t)
 
-                genre = t.metadata.genre.strip() if t.metadata and t.metadata.genre else None
-                if genre and genre.lower() not in ("unknown", "other", ""):
-                    genre_groups[genre].append(t)
+        # Intelligent genre clustering (multi-genre extraction, slug normalization, proximity matching)
+        genre_groups = GenreClusterer.cluster_tracks(completed_tracks)
 
-            # 3. Synchronize Artist Mixes and cleanup obsolete composite artist playlists
-            active_artists = set(artist_groups.keys())
-            existing_artist_playlists = [p for p in uow.playlists.list_all() if p.playlist_type == PLAYLIST_TYPE_ARTIST]
-            for old_p in existing_artist_playlists:
+        # Pre-resolve artist metadata (cover artwork and bio) outside the database lock
+        active_artists = set(artist_groups.keys())
+        existing_artist_playlists = [p for p in existing_playlists if p.playlist_type == PLAYLIST_TYPE_ARTIST]
+        artist_playlist_by_query = {p.filter_query: p for p in existing_artist_playlists if p.filter_query}
+
+        artist_enrichment: dict[str, dict] = {}
+        for artist in active_artists:
+            existing = artist_playlist_by_query.get(artist)
+            cover_url = self._itunes.lookup_artist_artwork(artist)
+            bio = None
+            if not existing or not existing.description or existing.description.startswith("Todas tus canciones"):
+                bio = self._itunes.lookup_artist_bio(artist)
+
+            artist_enrichment[artist] = {
+                "cover_url": cover_url or (existing.cover_url if existing else None),
+                "bio": bio or (existing.description if existing and not existing.description.startswith("Todas tus canciones") else f"Todas tus canciones guardadas de {artist}"),
+            }
+
+        # Pre-resolve genre artwork outside the database lock
+        active_genre_groups = {genre: tracks for genre, tracks in genre_groups.items() if len(tracks) >= 2}
+        active_canonical_genres = set(active_genre_groups.keys())
+        active_slug_to_canonical = {GenreClusterer.slugify(g): g for g in active_canonical_genres}
+
+        existing_genre_playlists = [p for p in existing_playlists if p.playlist_type == PLAYLIST_TYPE_GENRE]
+        genre_artwork: dict[str, Optional[str]] = {}
+        for canonical_genre in active_canonical_genres:
+            genre_artwork[canonical_genre] = self._itunes.lookup_genre_artwork(canonical_genre)
+
+        # ---------------------------------------------------------------------
+        # PHASE 3: Fast Atomic Persistence (<15ms transaction)
+        # ---------------------------------------------------------------------
+        with self._uow_factory() as uow:
+            # 1. Synchronize Artist Mixes and cleanup obsolete playlists
+            current_artist_playlists = [p for p in uow.playlists.list_all() if p.playlist_type == PLAYLIST_TYPE_ARTIST]
+            for old_p in current_artist_playlists:
                 if old_p.filter_query and old_p.filter_query not in active_artists:
                     uow.playlists.delete(old_p.id)
 
             for artist, tracks in artist_groups.items():
                 existing = uow.playlists.get_by_filter(PLAYLIST_TYPE_ARTIST, artist)
-                cover_url = self._itunes.lookup_artist_artwork(artist)
+                meta = artist_enrichment.get(artist, {})
+                cover_url = meta.get("cover_url")
+                bio = meta.get("bio")
 
                 if existing:
                     existing.tracks = tracks
                     existing.name = f"Mix de {artist}"
-                    # Preserve existing rich biography if present; otherwise fetch or keep placeholder
-                    if not existing.description or existing.description.startswith("Todas tus canciones"):
-                        bio = self._itunes.lookup_artist_bio(artist)
-                        if bio:
-                            existing.description = bio
-                        elif not existing.description:
-                            existing.description = f"Todas tus canciones guardadas de {artist}"
+                    if bio:
+                        existing.description = bio
                     existing.cover_url = cover_url or existing.cover_url
                     existing.updated_at = utc_now()
                     uow.playlists.update(existing)
                 else:
-                    bio = self._itunes.lookup_artist_bio(artist)
                     new_p = Playlist(
                         name=f"Mix de {artist}",
                         description=bio or f"Todas tus canciones guardadas de {artist}",
@@ -347,29 +382,51 @@ class SyncSmartPlaylistsUseCase:
                     )
                     uow.playlists.add(new_p)
 
-            # 4. Synchronize Genre Mixes (for genres with at least 2 tracks)
-            for genre, tracks in genre_groups.items():
-                if len(tracks) < 2:
-                    continue
-                existing = uow.playlists.get_by_filter(PLAYLIST_TYPE_GENRE, genre)
-                cover_url = None
-                if existing and existing.cover_url:
-                    cover_url = existing.cover_url
-                else:
-                    cover_url = self._itunes.lookup_genre_artwork(genre)
+            # 2. Synchronize Genre Mixes and cleanup obsolete / duplicate playlists
+            current_genre_playlists = [p for p in uow.playlists.list_all() if p.playlist_type == PLAYLIST_TYPE_GENRE]
+            playlists_by_slug: dict[str, list[Playlist]] = defaultdict(list)
+            for p in current_genre_playlists:
+                raw_ref = p.filter_query or p.name.replace("Mix ", "")
+                slug = GenreClusterer.slugify(raw_ref)
+                playlists_by_slug[slug].append(p)
 
-                if existing:
-                    existing.tracks = tracks
-                    existing.cover_url = cover_url or existing.cover_url
-                    existing.updated_at = utc_now()
-                    uow.playlists.update(existing)
+            # Delete obsolete genre playlists
+            for slug, plist_group in playlists_by_slug.items():
+                if slug not in active_slug_to_canonical:
+                    for old_p in plist_group:
+                        uow.playlists.delete(old_p.id)
+
+            # Update or create active canonical genre playlists, purging duplicates
+            for slug, canonical_genre in active_slug_to_canonical.items():
+                tracks = active_genre_groups[canonical_genre]
+                matching_playlists = playlists_by_slug.get(slug, [])
+
+                if matching_playlists:
+                    primary_p = next(
+                        (p for p in matching_playlists if p.filter_query == canonical_genre),
+                        matching_playlists[0],
+                    )
+
+                    for dup_p in matching_playlists:
+                        if dup_p.id != primary_p.id:
+                            uow.playlists.delete(dup_p.id)
+
+                    cover_url = primary_p.cover_url or genre_artwork.get(canonical_genre)
+                    primary_p.name = f"Mix {canonical_genre}"
+                    primary_p.description = f"Lo mejor del género {canonical_genre} en tu biblioteca"
+                    primary_p.filter_query = canonical_genre
+                    primary_p.tracks = tracks
+                    primary_p.cover_url = cover_url or primary_p.cover_url
+                    primary_p.updated_at = utc_now()
+                    uow.playlists.update(primary_p)
                 else:
+                    cover_url = genre_artwork.get(canonical_genre)
                     new_p = Playlist(
-                        name=f"Mix {genre}",
-                        description=f"Lo mejor del género {genre} en tu biblioteca",
+                        name=f"Mix {canonical_genre}",
+                        description=f"Lo mejor del género {canonical_genre} en tu biblioteca",
                         is_smart=True,
                         playlist_type=PLAYLIST_TYPE_GENRE,
-                        filter_query=genre,
+                        filter_query=canonical_genre,
                         cover_url=cover_url,
                         tracks=tracks,
                     )

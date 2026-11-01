@@ -1,7 +1,25 @@
-export const API_CONFIG = {
-  baseUrl: 'http://127.0.0.1:8000',
-  wsUrl: 'ws://127.0.0.1:8000/ws/events',
-  endpoints: {
+class ApiConfigManager {
+  private _port: number = 8000;
+
+  get port(): number {
+    return this._port;
+  }
+
+  setPort(port: number): void {
+    if (port && port > 0 && port <= 65535) {
+      this._port = port;
+    }
+  }
+
+  get baseUrl(): string {
+    return `http://127.0.0.1:${this._port}`;
+  }
+
+  get wsUrl(): string {
+    return `ws://127.0.0.1:${this._port}/ws/events`;
+  }
+
+  readonly endpoints = {
     search: '/api/v1/search',
     downloads: '/api/v1/downloads',
     library: '/api/v1/library',
@@ -17,5 +35,7 @@ export const API_CONFIG = {
     playlistTracks: (id: string) => `/api/v1/playlists/${id}/tracks`,
     playlistTrackDelete: (playlistId: string, trackId: string) => `/api/v1/playlists/${playlistId}/tracks/${trackId}`,
     playlistsSync: '/api/v1/playlists/sync-smart',
-  }
-};
+  };
+}
+
+export const API_CONFIG = new ApiConfigManager();

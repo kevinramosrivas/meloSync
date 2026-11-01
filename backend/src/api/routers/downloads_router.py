@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from ..dependencies import Container, get_container
 from ..schemas import DownloadRequest, TrackResponse
 from ...application.dto import DownloadTrackCommand
-from ...domain.entities import DownloadStatus
+from ...domain.entities import DownloadStatus, Track
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,31 @@ async def start_download(
         custom_quality=request.quality,
     )
 
+    # Synchronously register/reset the track in the database in PENDIENTE state.
+    # This guarantees that when the frontend immediately navigates to /downloads,
+    # the track is already visible and ready for live progress streaming without race conditions.
+    with container.uow_factory() as uow:
+        existing = uow.tracks.get_by_youtube_id(command.youtube_id)
+        if existing:
+            existing.status = DownloadStatus.PENDIENTE
+            existing.progress_percent = 0.0
+            existing.error_message = None
+            existing.original_title = command.original_title
+            existing.duration_seconds = command.duration_seconds
+            existing.channel_name = command.channel_name
+            track = uow.tracks.update(existing)
+        else:
+            track = Track(
+                youtube_id=command.youtube_id,
+                url=command.url,
+                original_title=command.original_title,
+                duration_seconds=command.duration_seconds,
+                channel_name=command.channel_name,
+                status=DownloadStatus.PENDIENTE,
+            )
+            track = uow.tracks.add(track)
+        uow.commit()
+
     use_case = container.get_download_use_case()
     loop = asyncio.get_running_loop()
 
@@ -40,8 +65,9 @@ async def start_download(
 
     return {
         "message": "Descarga encolada e iniciada en segundo plano.",
-        "youtube_id": request.youtube_id,
-        "status": "PENDIENTE",
+        "track_id": track.id,
+        "youtube_id": track.youtube_id,
+        "status": track.status.value,
     }
 
 

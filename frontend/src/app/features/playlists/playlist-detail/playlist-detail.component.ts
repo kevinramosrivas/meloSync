@@ -54,6 +54,12 @@ export class PlaylistDetailComponent implements OnInit {
     return p.description;
   });
 
+  readonly isBioLong = computed(() => {
+    const bio = this.artistBio();
+    if (!bio) return false;
+    return bio.length > 420 || bio.includes('\n\n');
+  });
+
   readonly artistName = computed(() => {
     const p = this.playlist();
     if (!p) return '';
@@ -223,13 +229,13 @@ export class PlaylistDetailComponent implements OnInit {
   getTypeBadge(type: string): { label: string; bgClass: string; textClass: string } {
     switch (type) {
       case 'top_played':
-        return { label: 'TOP RANKING', bgClass: 'bg-rose-500/20 border-rose-500/30', textClass: 'text-rose-300' };
+        return { label: 'TOP RANKING', bgClass: 'bg-white/[0.08] border-white/[0.12]', textClass: 'text-zinc-200' };
       case 'on_repeat':
-        return { label: 'HÁBITO RECIENTE', bgClass: 'bg-emerald-500/20 border-emerald-500/30', textClass: 'text-emerald-300' };
+        return { label: 'HÁBITO RECIENTE', bgClass: 'bg-white/[0.08] border-white/[0.12]', textClass: 'text-zinc-200' };
       case 'artist':
-        return { label: 'MIX DE ARTISTA', bgClass: 'bg-indigo-500/20 border-indigo-500/30', textClass: 'text-indigo-300' };
+        return { label: 'MIX DE ARTISTA', bgClass: 'bg-white/[0.08] border-white/[0.12]', textClass: 'text-zinc-200' };
       case 'genre':
-        return { label: 'MIX DE GÉNERO', bgClass: 'bg-purple-500/20 border-purple-500/30', textClass: 'text-purple-300' };
+        return { label: 'MIX DE GÉNERO', bgClass: 'bg-white/[0.08] border-white/[0.12]', textClass: 'text-zinc-200' };
       default:
         return { label: 'LISTA PERSONAL', bgClass: 'bg-white/[0.08] border-white/[0.12]', textClass: 'text-zinc-200' };
     }

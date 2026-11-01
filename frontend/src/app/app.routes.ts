@@ -37,6 +37,11 @@ export const routes: Routes = [
     title: 'meloSync — Ajustes'
   },
   {
+    path: 'mini-player',
+    loadComponent: () => import('./features/mini-player/mini-player.component').then(m => m.MiniPlayerComponent),
+    title: 'meloSync Mini Player'
+  },
+  {
     path: '**',
     redirectTo: 'search'
   }

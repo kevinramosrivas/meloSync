@@ -21,6 +21,7 @@ from .routers import (
 )
 from .websockets import ws_manager, ws_router
 
+import os
 from pathlib import Path
 
 # Setup structured logging with safe fallback for headless/windowless GUI execution
@@ -65,10 +66,12 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     """FastAPI application factory."""
+    backend_version = os.getenv("MELOSYNC_BACKEND_VERSION", os.getenv("BACKEND_VERSION", "2.0.0"))
+
     app = FastAPI(
         title="meloSync API 🎵",
         description="FastAPI + WebSockets Backend for meloSync Music Manager",
-        version="2.0.0",
+        version=backend_version,
         lifespan=lifespan,
     )
 
@@ -103,7 +106,7 @@ def create_app() -> FastAPI:
 
     @app.get("/health", tags=["Health"])
     def health_check():
-        return {"status": "ok", "service": "meloSync API", "version": "2.0.0"}
+        return {"status": "ok", "service": "meloSync API", "version": backend_version}
 
     return app
 

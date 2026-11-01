@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 
 export type IconName =
   | 'play'
@@ -37,10 +37,15 @@ export type IconName =
   | 'repeat-1'
   | 'chevron-down'
   | 'chevron-up'
-  | 'list-music';
+  | 'list-music'
+  | 'pip'
+  | 'user';
 
 @Component({
   selector: 'app-icon',
+  host: {
+    class: 'inline-flex items-center justify-center shrink-0 leading-none align-middle',
+  },
   template: `
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -52,7 +57,7 @@ export type IconName =
       stroke-width="2"
       stroke-linecap="round"
       stroke-linejoin="round"
-      class="app-svg-icon"
+      class="app-svg-icon block shrink-0"
       [style.width.px]="size()"
       [style.height.px]="size()"
     >
@@ -233,6 +238,14 @@ export type IconName =
           <path d="M16 6H3" />
           <path d="M12 18H3" />
         }
+        @case ('pip') {
+          <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" fill="none" />
+          <rect x="11" y="10" width="8" height="6" rx="1" stroke="currentColor" fill="currentColor" fill-opacity="0.25" />
+        }
+        @case ('user') {
+          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        }
       }
     </svg>
   `,
@@ -249,7 +262,6 @@ export type IconName =
       flex-shrink: 0;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IconComponent {
   readonly name = input.required<IconName>();

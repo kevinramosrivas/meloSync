@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "meloSync",
-  "version": "2.0.0",
+  "version": "1.0.1",
   "identifier": "com.melosync.desktop",
   "build": {
     "beforeDevCommand": "npm start",
@@ -10,6 +10,7 @@
     "frontendDist": "../dist/frontend/browser"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "label": "main",
@@ -22,6 +23,22 @@
         "fullscreen": false,
         "decorations": true,
         "transparent": false
+      },
+      {
+        "label": "mini-player",
+        "title": "meloSync Mini Player",
+        "url": "/mini-player",
+        "width": 320,
+        "height": 320,
+        "minWidth": 260,
+        "minHeight": 76,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "visible": false,
+        "shadow": true
       }
     ],
     "security": {

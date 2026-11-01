@@ -26,11 +26,20 @@ class BackgroundDownloadExecutor:
         loop: asyncio.AbstractEventLoop,
     ) -> asyncio.Future:
         """Schedules download use case execution in the worker thread pool."""
-        return loop.run_in_executor(
+        fut = loop.run_in_executor(
             self._executor,
             use_case.execute,
             command,
         )
+
+        def _handle_completion(f: asyncio.Future) -> None:
+            try:
+                f.result()
+            except Exception as e:
+                logger.error("Background download task failed for %s: %s", command.youtube_id, e, exc_info=True)
+
+        fut.add_done_callback(_handle_completion)
+        return fut
 
     def shutdown(self) -> None:
         """Shuts down the executor pool."""

@@ -5,6 +5,7 @@ export interface AppSettings {
   default_audio_quality: AudioQuality;
   normalize_audio_lufs: number;
   auto_tag_metadata: boolean;
+  backend_version?: string;
 }
 
 export interface UpdateSettingsRequest {

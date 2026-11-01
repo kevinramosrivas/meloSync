@@ -1,4 +1,4 @@
-import { Component, inject, signal, effect, OnInit } from '@angular/core';
+import { Component, inject, signal, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DownloadsApiService } from '../../data/downloads-api.service';
 import { WebSocketService } from '../../core/services/websocket.service';
@@ -13,12 +13,13 @@ import { IconComponent } from '../../shared/components/icon/icon.component';
   imports: [CommonModule, StatusBadgeComponent, ProgressBarComponent, IconComponent],
   templateUrl: './downloads.component.html'
 })
-export class DownloadsComponent implements OnInit {
+export class DownloadsComponent implements OnInit, OnDestroy {
   private downloadsApi = inject(DownloadsApiService);
   private ws = inject(WebSocketService);
   private toast = inject(ToastService);
 
   readonly tracks = signal<Track[]>([]);
+  private pollInterval: any = null;
 
   constructor() {
     // React to incoming WebSocket download progress events
@@ -33,6 +34,7 @@ export class DownloadsComponent implements OnInit {
               ...updated[index],
               status: progress.status,
               progress_percent: progress.progress_percent,
+              error_message: progress.status === 'ERROR' ? (progress.stage_description || updated[index].error_message) : updated[index].error_message,
             };
             return updated;
           } else {
@@ -71,6 +73,7 @@ export class DownloadsComponent implements OnInit {
         });
       }
     });
+
     // Reload active downloads when WebSocket connects (handles sidecar boot delay)
     effect(() => {
       if (this.ws.isConnected()) {
@@ -81,6 +84,20 @@ export class DownloadsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadActiveDownloads();
+    // Safety polling every 2.5s to guarantee fresh state during active processing
+    this.pollInterval = setInterval(() => {
+      const hasActive = this.tracks().some(t => t.status !== 'COMPLETADA' && t.status !== 'ERROR');
+      if (hasActive) {
+        this.loadActiveDownloads();
+      }
+    }, 2500);
+  }
+
+  ngOnDestroy(): void {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
   }
 
   loadActiveDownloads(retryCount = 0): void {
@@ -96,7 +113,10 @@ export class DownloadsComponent implements OnInit {
 
   retry(trackId: string): void {
     this.downloadsApi.retryDownload(trackId).subscribe({
-      next: () => this.toast.info('Reintentando descarga...'),
+      next: () => {
+        this.toast.info('Reintentando descarga...');
+        this.loadActiveDownloads();
+      },
       error: (e) => this.toast.error('Error al reintentar', e.message)
     });
   }

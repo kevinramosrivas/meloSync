@@ -1,0 +1,225 @@
+<div
+  (mousedown)="onStartDrag($event)"
+  data-tauri-drag-region="deep"
+  class="h-screen w-screen bg-[#121216] text-white flex flex-col overflow-hidden border border-white/10 rounded-2xl select-none shadow-2xl">
+  <!-- Top Header / Drag Region -->
+  <header
+    (mousedown)="onStartDrag($event)"
+    data-tauri-drag-region="deep"
+    class="relative flex items-center justify-between px-2.5 h-6 shrink-0 bg-[#0d0d12]/95 border-b border-white/[0.06] cursor-grab active:cursor-grabbing">
+    <!-- Left: App Brand (Logo + Name) -->
+    <div
+      data-tauri-drag-region="deep"
+      class="flex items-center gap-1.5 select-none cursor-grab active:cursor-grabbing">
+      <img src="/logo.svg" alt="meloSync" data-tauri-drag-region="deep" class="w-3.5 h-3.5 object-contain pointer-events-none" />
+      <span data-tauri-drag-region="deep" class="text-[10px] font-semibold tracking-tight text-zinc-400 uppercase pointer-events-none">meloSync</span>
+    </div>
+
+    <!-- Center: Drag Pattern (::::) -->
+    <div
+      (mousedown)="onStartDrag($event)"
+      data-tauri-drag-region="deep"
+      class="flex items-center justify-center px-4 py-1 text-zinc-500 opacity-60 hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+      <span
+        data-tauri-drag-region="deep"
+        class="text-[10px] tracking-widest font-mono select-none pointer-events-none">::::</span>
+    </div>
+
+    <!-- Right: Window Actions (Restore to Main & Close [X]) -->
+    <div class="flex items-center gap-1" data-tauri-drag-region="false">
+      <button
+        type="button"
+        (click)="restoreMainWindow()"
+        title="Abrir ventana principal de meloSync"
+        class="flex h-5 w-5 items-center justify-center rounded text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
+        <app-icon name="external-link" [size]="11" />
+      </button>
+
+      <button
+        type="button"
+        (click)="closeMiniPlayer()"
+        title="Cerrar mini reproductor"
+        class="flex h-5 w-5 items-center justify-center rounded text-zinc-400 hover:text-[#fa2d48] hover:bg-white/10 transition-colors cursor-pointer">
+        <app-icon name="x" [size]="12" />
+      </button>
+    </div>
+  </header>
+
+  <!-- MODE A: Ultra-compact Pill Bar (< 140px) -->
+  @if (isPillMode()) {
+    <div
+      (mousedown)="onStartDrag($event)"
+      data-tauri-drag-region="deep"
+      class="flex-1 flex flex-col justify-between px-3 pt-1.5 pb-2 min-h-0 cursor-grab active:cursor-grabbing">
+      <div class="flex items-center gap-2.5 flex-1 min-w-0" data-tauri-drag-region="deep">
+        <!-- Cover Art thumbnail (strictly aspect-square with reserved margin) -->
+        <div
+          data-tauri-drag-region="false"
+          (click)="restoreMainWindow()"
+          title="Ver en meloSync"
+          class="h-8.5 w-8.5 shrink-0 aspect-square rounded-lg overflow-hidden bg-zinc-900 border border-white/10 shadow-sm cursor-pointer hover:opacity-90 transition-opacity my-auto">
+          @if (sync.coverUrl()) {
+            <img [src]="sync.coverUrl()" alt="" class="h-full w-full object-cover pointer-events-none" />
+          } @else {
+            <div class="h-full w-full flex items-center justify-center text-zinc-600">
+              <app-icon name="music" [size]="16" />
+            </div>
+          }
+        </div>
+
+        <!-- Info -->
+        <div
+          (mousedown)="onStartDrag($event)"
+          data-tauri-drag-region="deep"
+          class="flex flex-col justify-center min-w-0 flex-1 cursor-grab active:cursor-grabbing overflow-hidden">
+          <app-marquee-text
+            [text]="sync.track()?.display_title || 'Sin reproducción'"
+            customClass="text-xs font-semibold text-white leading-tight" />
+          <span
+            data-tauri-drag-region="deep"
+            class="text-[11px] text-zinc-400 truncate leading-tight mt-0.5 pointer-events-none"
+            [title]="sync.track()?.display_artist || 'meloSync'">
+            {{ sync.track()?.display_artist || 'meloSync' }}
+          </span>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex items-center gap-1 shrink-0" data-tauri-drag-region="false">
+          @if (canShowPreviousInPill()) {
+            <button
+              type="button"
+              (click)="sync.playPrevious()"
+              [disabled]="!sync.track() || !sync.hasPrevious()"
+              title="Pista anterior"
+              class="flex h-7 w-7 items-center justify-center rounded-full text-zinc-300 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+              <app-icon name="skip-back" [size]="13" />
+            </button>
+          }
+          <button
+            type="button"
+            (click)="sync.togglePlay()"
+            [disabled]="!sync.track()"
+            [title]="sync.isPlaying() ? 'Pausar' : 'Reproducir'"
+            class="flex h-7.5 w-7.5 items-center justify-center rounded-full bg-white text-black hover:scale-105 active:scale-95 transition-transform duration-200 ease-out will-change-transform disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-md">
+            <app-icon [name]="sync.isPlaying() ? 'pause' : 'play'" [size]="14" />
+          </button>
+          <button
+            type="button"
+            (click)="sync.playNext()"
+            [disabled]="!sync.track() || !sync.hasNext()"
+            title="Siguiente pista"
+            class="flex h-7 w-7 items-center justify-center rounded-full text-zinc-300 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+            <app-icon name="skip-forward" [size]="14" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Compact Progress Line at bottom of pill -->
+      <div
+        data-tauri-drag-region="false"
+        class="h-1 w-full bg-white/10 rounded-full overflow-hidden cursor-pointer mt-1"
+        (click)="onSeekClick($event)">
+        <div
+          class="h-full bg-gradient-to-r from-[#fa2d48] to-[#ff4760] transition-all"
+          [style.width.%]="sync.progressPercent()"></div>
+      </div>
+    </div>
+  } @else {
+    <!-- MODE B: Square Card (>= 140px) -->
+    <div
+      (mousedown)="onStartDrag($event)"
+      data-tauri-drag-region="deep"
+      class="flex-1 flex flex-col items-center justify-between p-3 min-h-0 cursor-grab active:cursor-grabbing overflow-hidden">
+
+      <!-- Artwork Container: ALWAYS STRICT 1:1 ASPECT RATIO -->
+      <div class="flex-1 flex items-center justify-center min-h-0 w-full py-1" data-tauri-drag-region="deep">
+        <div
+          data-tauri-drag-region="false"
+          (click)="restoreMainWindow()"
+          title="Clic para volver a meloSync"
+          class="relative aspect-square h-full max-h-[300px] max-w-full rounded-2xl overflow-hidden bg-zinc-900 border border-white/10 shadow-2xl group/art cursor-pointer">
+          @if (sync.coverUrl()) {
+            <img
+              [src]="sync.coverUrl()"
+              alt=""
+              class="h-full w-full object-cover group-hover/art:scale-102 transition-transform duration-300 pointer-events-none" />
+          } @else {
+            <div class="h-full w-full flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-zinc-500">
+              <app-icon name="music" [size]="48" />
+            </div>
+          }
+          <!-- Ambient hover overlay to restore main window -->
+          <div class="absolute inset-0 bg-black/40 opacity-0 group-hover/art:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-xs text-white font-medium backdrop-blur-[2px]">
+            <app-icon name="external-link" [size]="14" />
+            <span>Abrir meloSync</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Track Metadata -->
+      <div
+        (mousedown)="onStartDrag($event)"
+        data-tauri-drag-region="deep"
+        class="w-full text-center mt-1 px-2 shrink-0 cursor-grab active:cursor-grabbing overflow-hidden">
+        <app-marquee-text
+          [text]="sync.track()?.display_title || 'Sin reproducción'"
+          customClass="text-sm font-bold text-white leading-snug justify-center" />
+        <p
+          data-tauri-drag-region="deep"
+          class="text-xs text-zinc-400 truncate mt-0.5 pointer-events-none"
+          [title]="sync.track()?.display_artist || 'Selecciona una canción'">
+          {{ sync.track()?.display_artist || 'Selecciona una canción' }}
+        </p>
+      </div>
+
+      <!-- Timeline & Seek Bar -->
+      <div class="w-full mt-2 px-1 shrink-0" data-tauri-drag-region="false">
+        <div
+          class="group/seek relative h-4 w-full flex items-center cursor-pointer"
+          (click)="onSeekClick($event)">
+          <div class="w-full h-1 group-hover/seek:h-1.5 bg-white/15 rounded-full transition-[height] relative flex items-center">
+            <div
+              class="h-full bg-gradient-to-r from-[#fa2d48] to-[#ff4760] rounded-full relative"
+              [style.width.%]="sync.progressPercent()">
+              <span class="absolute right-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white rounded-full shadow opacity-0 group-hover/seek:opacity-100 transition-opacity"></span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-[10px] text-zinc-400 font-mono mt-0.5 tabular-nums">
+          <span>{{ sync.currentTime() | duration }}</span>
+          <span>{{ sync.duration() | duration }}</span>
+        </div>
+      </div>
+
+      <!-- Playback Controls -->
+      <div class="flex items-center justify-center gap-4 mt-1 mb-0.5 shrink-0" data-tauri-drag-region="false">
+        <button
+          type="button"
+          (click)="sync.playPrevious()"
+          [disabled]="!sync.track() || !sync.hasPrevious()"
+          title="Pista anterior"
+          class="flex h-8 w-8 items-center justify-center rounded-full text-zinc-300 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+          <app-icon name="skip-back" [size]="17" />
+        </button>
+
+        <button
+          type="button"
+          (click)="sync.togglePlay()"
+          [disabled]="!sync.track()"
+          [title]="sync.isPlaying() ? 'Pausar' : 'Reproducir'"
+          class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-[#fa2d48] to-[#ff4760] text-white shadow-lg shadow-[#fa2d48]/30 hover:scale-105 active:scale-95 transition-transform duration-200 ease-out will-change-transform disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer">
+          <app-icon [name]="sync.isPlaying() ? 'pause' : 'play'" [size]="20" />
+        </button>
+
+        <button
+          type="button"
+          (click)="sync.playNext()"
+          [disabled]="!sync.track() || !sync.hasNext()"
+          title="Pista siguiente"
+          class="flex h-8 w-8 items-center justify-center rounded-full text-zinc-300 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+          <app-icon name="skip-forward" [size]="17" />
+        </button>
+      </div>
+    </div>
+  }
+</div>

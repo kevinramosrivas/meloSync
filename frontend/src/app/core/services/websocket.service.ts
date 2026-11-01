@@ -1,11 +1,14 @@
-import { Injectable, signal, OnDestroy } from '@angular/core';
+import { Injectable, signal, OnDestroy, inject } from '@angular/core';
+import { filter, take } from 'rxjs';
 import { API_CONFIG } from '../config/api.config';
+import { BackendGateService } from './backend-gate.service';
 import { WebSocketEvent, DownloadProgress, Track } from '../../domain/models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class WebSocketService implements OnDestroy {
+  private readonly backendGate = inject(BackendGateService);
   private socket: WebSocket | null = null;
   private reconnectTimeout: any = null;
   private pingInterval: any = null;
@@ -20,7 +23,20 @@ export class WebSocketService implements OnDestroy {
   readonly libraryUpdated = signal<number>(Date.now());
 
   constructor() {
-    this.connect();
+    this.backendGate.ready$
+      .pipe(
+        filter(ready => ready === true)
+      )
+      .subscribe(() => {
+        // If socket is already open to current port, keep it; otherwise reconnect
+        if (!this.socket || this.socket.url !== API_CONFIG.wsUrl) {
+          if (this.socket) {
+            try { this.socket.close(); } catch {}
+            this.socket = null;
+          }
+          this.connect();
+        }
+      });
   }
 
   connect(): void {

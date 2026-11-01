@@ -9,7 +9,7 @@
         } @else if (searchQuery()) {
           {{ filteredTracks().length }} de {{ tracks().length }} canciones encontradas
         } @else {
-          {{ tracks().length }} canciones descargadas en alta calidad
+          {{ tracks().length }} canciones descargadas
         }
       </p>
     </div>
@@ -70,7 +70,7 @@
       <div class="flex items-center rounded-xl bg-white/[0.05] p-1 border border-white/[0.08] shadow-sm">
         <button
           type="button"
-          class="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer"
+          class="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 ease-out active:scale-95 cursor-pointer"
           [class.bg-white/[0.15]]="viewMode() === viewModes.LIST"
           [class.text-white]="viewMode() === viewModes.LIST"
           [class.shadow-sm]="viewMode() === viewModes.LIST"
@@ -85,7 +85,7 @@
 
         <button
           type="button"
-          class="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer"
+          class="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 ease-out active:scale-95 cursor-pointer"
           [class.bg-white/[0.15]]="viewMode() === viewModes.GRID"
           [class.text-white]="viewMode() === viewModes.GRID"
           [class.shadow-sm]="viewMode() === viewModes.GRID"
@@ -242,7 +242,7 @@
     } @else {
       <!-- 1. Track List View (Prioritized, always mounted, toggled via .hidden) -->
       <div 
-        class="flex flex-col w-full rounded-2xl bg-[#14141c]/70 border border-white/[0.07] overflow-hidden shadow-xl backdrop-blur-sm"
+        class="flex flex-col w-full rounded-2xl bg-[#14141c]/70 border border-white/[0.07] overflow-hidden shadow-xl backdrop-blur-sm animate-view-fade"
         [class.hidden]="viewMode() !== viewModes.LIST"
       >
         <!-- Table Header -->
@@ -277,7 +277,7 @@
       <!-- 2. Track Cards Grid (Lazy rendered on demand, toggled via .hidden) -->
       @if (hasRenderedCards()) {
         <div 
-          class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5 w-full"
+          class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5 w-full animate-view-fade"
           [class.hidden]="viewMode() !== viewModes.GRID"
         >
           @for (track of filteredTracks(); track track.id) {

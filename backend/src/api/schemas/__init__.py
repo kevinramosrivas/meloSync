@@ -179,14 +179,16 @@ class SettingsResponse(BaseModel):
     default_audio_quality: AudioQuality
     normalize_audio_lufs: float
     auto_tag_metadata: bool
+    backend_version: str = "2.0.0"
 
     @classmethod
-    def from_dto(cls, dto: Any) -> SettingsResponse:
+    def from_dto(cls, dto: Any, backend_version: str = "2.0.0") -> SettingsResponse:
         return cls(
             music_download_directory=dto.music_download_directory,
             default_audio_quality=dto.default_audio_quality,
             normalize_audio_lufs=dto.normalize_audio_lufs,
             auto_tag_metadata=dto.auto_tag_metadata,
+            backend_version=backend_version,
         )
 
 

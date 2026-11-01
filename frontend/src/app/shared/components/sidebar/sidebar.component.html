@@ -114,36 +114,19 @@
     </nav>
   </div>
 
-  <!-- Sidebar Footer: Abrir Carpeta & Conexión WebSocket -->
+  <!-- Sidebar Footer: Abrir Carpeta -->
   <div class="flex flex-col gap-3 border-t border-white/[0.08] pt-3 transition-all duration-200">
     <button type="button"
-      class="flex items-center gap-3 h-10 w-full rounded-xl transition-all duration-150 cursor-pointer overflow-hidden border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] text-zinc-300 hover:text-white"
+      class="flex items-center h-10 w-full rounded-xl transition-all duration-150 cursor-pointer overflow-hidden border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] text-zinc-300 hover:text-white"
       [class.px-3]="!isCollapsed()" [class.justify-center]="isCollapsed()" (click)="openMusicFolder()"
       title="Abrir Carpeta de Música">
-      <app-icon name="folder" [size]="17" class="shrink-0" />
+      <app-icon name="folder" [size]="18" class="shrink-0" />
       <span
         class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] text-xs font-medium"
         [class.max-w-0]="isCollapsed()" [class.opacity-0]="isCollapsed()" [class.ml-0]="isCollapsed()"
-        [class.max-w-[120px]]="!isCollapsed()" [class.opacity-100]="!isCollapsed()" [class.ml-2.5]="!isCollapsed()">
+        [class.max-w-[120px]]="!isCollapsed()" [class.opacity-100]="!isCollapsed()" [class.ml-3]="!isCollapsed()">
         Abrir Carpeta
       </span>
     </button>
-
-    @if (!ws.isConnected()) {
-    <div class="flex items-center h-6 w-full transition-all duration-300 animate-fade-in text-amber-400"
-      [class.px-2]="!isCollapsed()" [class.justify-start]="!isCollapsed()" [class.justify-center]="isCollapsed()"
-      title="Conectando con el servicio de audio...">
-      <span class="relative flex h-2 w-2 shrink-0">
-        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-        <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500 shadow-sm shadow-amber-500/50"></span>
-      </span>
-      <span
-        class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] text-[11.5px] font-medium text-amber-300/80"
-        [class.max-w-0]="isCollapsed()" [class.opacity-0]="isCollapsed()" [class.ml-0]="isCollapsed()"
-        [class.max-w-[150px]]="!isCollapsed()" [class.opacity-100]="!isCollapsed()" [class.ml-2.5]="!isCollapsed()">
-        Conectando...
-      </span>
-    </div>
-    }
   </div>
 </aside>

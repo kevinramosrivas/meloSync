@@ -15,6 +15,11 @@ from ...application.dto import UpdateSettingsCommand
 router = APIRouter(prefix="/settings", tags=["Settings"])
 
 
+def get_backend_version() -> str:
+    """Reads the backend version from environment variable with fallback to 2.0.0."""
+    return os.getenv("MELOSYNC_BACKEND_VERSION", os.getenv("BACKEND_VERSION", "2.0.0"))
+
+
 @router.get("", response_model=SettingsResponse)
 def get_settings(
     container: Container = Depends(get_container),
@@ -22,7 +27,7 @@ def get_settings(
     """Retrieves current application preferences."""
     use_case = container.get_settings_use_case()
     settings = use_case.execute()
-    return SettingsResponse.from_dto(settings)
+    return SettingsResponse.from_dto(settings, backend_version=get_backend_version())
 
 
 @router.put("", response_model=SettingsResponse)
@@ -39,7 +44,7 @@ def update_settings(
         auto_tag_metadata=body.auto_tag_metadata,
     )
     saved = use_case.execute(command)
-    return SettingsResponse.from_dto(saved)
+    return SettingsResponse.from_dto(saved, backend_version=get_backend_version())
 
 
 @router.post("/open-folder")

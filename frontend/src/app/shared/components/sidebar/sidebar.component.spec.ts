@@ -93,20 +93,18 @@ describe('SidebarComponent', () => {
     vi.unstubAllGlobals();
   });
 
-  it('should remain clean and not show connection indicator when connected', () => {
+  it('should remain clean and not show technical connection indicators', () => {
     mockWs.isConnected.set(true);
     fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
+    let compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).not.toContain('Servidor Conectado');
-    expect(compiled.textContent).not.toContain('Conectando...');
-  });
+    expect(compiled.textContent).not.toContain('Conectando');
 
-  it('should display a subtle connecting indicator when disconnected', () => {
     mockWs.isConnected.set(false);
     fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Conectando...');
+    compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).not.toContain('Servidor Conectado');
+    expect(compiled.textContent).not.toContain('Conectando');
   });
 });
 
