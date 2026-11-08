@@ -20,7 +20,7 @@ from typing import Optional
 from ..dto import DownloadProgressDTO, DownloadTrackCommand, TrackDTO
 from ..events import IEventPublisher
 from ...domain.entities import AudioQuality, DownloadStatus, Track, TrackMetadata
-from ...domain.exceptions import AudioProcessingException, DownloadException
+from ...domain.exceptions import AudioProcessingException, DownloadCancelledException, DownloadException
 from ...domain.repositories import IUnitOfWork
 from ...domain.services import (
     IAudioDownloaderService,
@@ -66,8 +66,13 @@ class DownloadAndProcessTrackUseCase:
         self,
         command: DownloadTrackCommand,
         progress_callback: Optional[Callable[[DownloadProgressDTO], None]] = None,
+        cancel_check: Optional[Callable[[], bool]] = None,
     ) -> TrackDTO:
         """Executes the full download, processing, tagging, and persistence pipeline."""
+
+        def check_cancellation() -> None:
+            if cancel_check and cancel_check():
+                raise DownloadCancelledException("Descarga cancelada por el usuario.")
 
         def notify(
             track_entity: Track,
@@ -102,6 +107,8 @@ class DownloadAndProcessTrackUseCase:
             target_output_dir.mkdir(parents=True, exist_ok=True)
             target_loudness = settings.normalize_audio_lufs
             quality = command.custom_quality or settings.default_audio_quality
+            skip_non_music = settings.skip_non_music_sections
+            trim_silence = settings.trim_silence
 
             existing = uow.tracks.get_by_youtube_id(command.youtube_id)
             if existing:
@@ -133,6 +140,7 @@ class DownloadAndProcessTrackUseCase:
             # -------------------------------------------------------------
             # STEP 1: yt-dlp Download (DESCARGANDO)
             # -------------------------------------------------------------
+            check_cancellation()
             track.mark_downloading()
             with self._uow_factory() as uow:
                 uow.tracks.update(track)
@@ -140,27 +148,47 @@ class DownloadAndProcessTrackUseCase:
             notify(track, "Descargando audio de YouTube...")
 
             def on_ytdlp_progress(percent: float, speed: str, eta: str) -> None:
+                check_cancellation()
                 track.update_progress(percent * 0.45)  # Scale to 0-45%
                 notify(track, f"Descargando audio: {percent:.1f}%", speed=speed, eta=eta)
 
-            raw_audio_path = self._downloader.download(
-                url=command.url,
-                output_directory=str(target_output_dir),
-                quality=quality,
-                progress_callback=on_ytdlp_progress,
-            )
+            download_url = command.url
+            if not download_url.startswith("http") and len(command.youtube_id) == 11 and not command.youtube_id.startswith("local_"):
+                download_url = f"https://www.youtube.com/watch?v={command.youtube_id}"
+
+            if command.youtube_id.startswith("local_") or download_url.startswith("local://") or not (download_url.startswith("http://") or download_url.startswith("https://")):
+                candidate_name = download_url[len("local://"):] if download_url.startswith("local://") else f"{command.original_title}.mp3"
+                candidate_path = target_output_dir / candidate_name
+                if candidate_path.exists() and candidate_path.is_file():
+                    raw_audio_path = str(candidate_path)
+                else:
+                    raise DownloadException(
+                        f"La pista '{command.original_title}' proviene de un archivo local y no puede descargarse de YouTube. "
+                        f"Copia '{candidate_name}' en tu carpeta de música para vincularla."
+                    )
+            else:
+                raw_audio_path = self._downloader.download(
+                    url=download_url,
+                    output_directory=str(target_output_dir),
+                    quality=quality,
+                    progress_callback=on_ytdlp_progress,
+                    skip_non_music_sections=skip_non_music,
+                    cancel_check=cancel_check,
+                )
 
             # -------------------------------------------------------------
             # STEP 2: FFmpeg Audio Processing (PROCESANDO_AUDIO)
             # -------------------------------------------------------------
+            check_cancellation()
             track.mark_processing_audio()
             track.update_progress(45.0)
             with self._uow_factory() as uow:
                 uow.tracks.update(track)
 
-            notify(track, "Normalizando volumen (Loudnorm -14 LUFS) y recortando silencios...")
+            notify(track, "Normalizando volumen (Loudnorm -14 LUFS) y masterizando audio...")
 
             def on_ffmpeg_progress(percent: float, desc: str) -> None:
+                check_cancellation()
                 scaled = 45.0 + (percent * 0.30)  # Scale to 45-75%
                 track.update_progress(scaled)
                 notify(track, desc)
@@ -171,6 +199,9 @@ class DownloadAndProcessTrackUseCase:
                     output_directory=str(target_output_dir),
                     target_loudness_lufs=target_loudness,
                     progress_callback=on_ffmpeg_progress,
+                    quality=quality,
+                    trim_silence=trim_silence,
+                    cancel_check=cancel_check,
                 )
             except AudioProcessingException as pe:
                 logger.warning("FFmpeg processing failed (%s); falling back to raw audio.", pe)
@@ -179,6 +210,7 @@ class DownloadAndProcessTrackUseCase:
             # -------------------------------------------------------------
             # STEP 3: Metadata Resolution (OBTENIENDO_METADATOS)
             # -------------------------------------------------------------
+            check_cancellation()
             track.mark_fetching_metadata()
             track.update_progress(75.0)
             with self._uow_factory() as uow:
@@ -186,20 +218,42 @@ class DownloadAndProcessTrackUseCase:
 
             notify(track, "Consultando metadatos oficiales y carátula HD en iTunes...")
 
-            # Clean raw title
-            clean_artist, clean_title = self._cleaner.clean(command.original_title)
-            query_artist = clean_artist or command.channel_name
-            query_title = clean_title or command.original_title
+            # Use preferred metadata from backup/import if provided, skipping external iTunes queries
+            if command.preferred_metadata:
+                enriched_meta = command.preferred_metadata
+                if not enriched_meta.cover_bytes and enriched_meta.cover_url:
+                    try:
+                        downloaded_cover = self._metadata_provider.download_cover_bytes(enriched_meta.cover_url)
+                        if downloaded_cover:
+                            enriched_meta = TrackMetadata(
+                                title=enriched_meta.title,
+                                artist=enriched_meta.artist,
+                                album=enriched_meta.album,
+                                year=enriched_meta.year,
+                                genre=enriched_meta.genre,
+                                track_number=enriched_meta.track_number,
+                                disc_number=enriched_meta.disc_number,
+                                cover_url=enriched_meta.cover_url,
+                                cover_bytes=downloaded_cover,
+                                lyrics=enriched_meta.lyrics,
+                            )
+                    except Exception as ce:
+                        logger.warning("Could not load cover bytes for preferred metadata: %s", ce)
+            else:
+                # Clean raw title
+                clean_artist, clean_title = self._cleaner.clean(command.original_title)
+                query_artist = clean_artist or command.channel_name
+                query_title = clean_title or command.original_title
 
-            enriched_meta = self._metadata_provider.lookup(query=query_title, artist=query_artist)
+                enriched_meta = self._metadata_provider.lookup(query=query_title, artist=query_artist)
 
-            if not enriched_meta:
-                logger.info("iTunes search yielded no match. Using regex cleaned fallback.")
-                enriched_meta = TrackMetadata(
-                    title=clean_title or command.original_title,
-                    artist=clean_artist or command.channel_name or "Desconocido",
-                    album="Sencillo",
-                )
+                if not enriched_meta:
+                    logger.info("iTunes search yielded no match. Using regex cleaned fallback.")
+                    enriched_meta = TrackMetadata(
+                        title=clean_title or command.original_title,
+                        artist=clean_artist or command.channel_name or "Desconocido",
+                        album="Sencillo",
+                    )
 
             track.update_progress(88.0)
             notify(track, f"Metadatos obtenidos: {enriched_meta.artist} - {enriched_meta.title}")
@@ -207,6 +261,7 @@ class DownloadAndProcessTrackUseCase:
             # -------------------------------------------------------------
             # STEP 4: Mutagen Tagging & File Renaming
             # -------------------------------------------------------------
+            check_cancellation()
             notify(track, "Inyectando etiquetas ID3v2.4 y carátula en alta resolución...")
 
             final_filename = _sanitize_filename(f"{enriched_meta.artist} - {enriched_meta.title}") + ".mp3"
@@ -225,11 +280,13 @@ class DownloadAndProcessTrackUseCase:
                 raise DownloadException("El archivo de audio final no existe en el disco.")
 
             # Apply ID3 tags
+            check_cancellation()
             self._tagger.apply_tags(str(final_file_path), enriched_meta)
 
             # -------------------------------------------------------------
             # STEP 5: Persistence & Completion (COMPLETADA)
             # -------------------------------------------------------------
+            check_cancellation()
             track.mark_completed(final_file_path=str(final_file_path), metadata=enriched_meta)
 
             with self._uow_factory() as uow:
@@ -242,6 +299,30 @@ class DownloadAndProcessTrackUseCase:
                 self._event_publisher.publish_library_updated()
 
             return final_dto
+
+        except DownloadCancelledException as ce:
+            logger.info("Pipeline cancelled for track %s: %s", command.youtube_id, ce)
+            for p in (raw_audio_path, processed_audio_path):
+                if p:
+                    try:
+                        cand = Path(p)
+                        if cand.exists():
+                            cand.unlink()
+                    except Exception:
+                        pass
+
+            with self._uow_factory() as uow:
+                try:
+                    existing = uow.tracks.get_by_id(track.id)
+                    if existing:
+                        existing.mark_cancelled("Descarga cancelada por el usuario")
+                        track = uow.tracks.update(existing)
+                        uow.commit()
+                except Exception as ue:
+                    logger.warning("Could not update track to CANCELADA in database: %s", ue)
+
+            notify(track, "Descarga cancelada por el usuario")
+            raise
 
         except Exception as e:
             error_msg = str(e)

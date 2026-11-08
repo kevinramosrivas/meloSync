@@ -98,6 +98,28 @@ class IPlaylistRepository(ABC):
         """Deletes a playlist record by its domain ID."""
         raise NotImplementedError
 
+    @abstractmethod
+    def get_artist_cache(self, artist_key: str) -> Optional[tuple[Optional[str], Optional[str]]]:
+        """Retrieves cached (portrait_url, bio) for an artist key."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def save_artist_cache(
+        self, artist_key: str, artist_name: str, portrait_url: Optional[str], bio: Optional[str]
+    ) -> None:
+        """Persists cached artist portrait and biography."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_genre_cache(self, genre_key: str) -> Optional[str]:
+        """Retrieves cached artwork_url for a genre key."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def save_genre_cache(self, genre_key: str, genre_name: str, artwork_url: Optional[str]) -> None:
+        """Persists cached genre artwork."""
+        raise NotImplementedError
+
 
 class ISettingsRepository(ABC):
     """Abstract contract for AppSettings persistence."""

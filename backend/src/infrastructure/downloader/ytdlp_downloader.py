@@ -7,12 +7,12 @@ from pathlib import Path
 import re
 import shutil
 import sys
-from typing import Any, Optional, cast
+from typing import Any, Callable, Optional, cast
 
 import yt_dlp
 
 from ...domain.entities import AudioQuality, SearchResult
-from ...domain.exceptions import DownloadException
+from ...domain.exceptions import DownloadCancelledException, DownloadException
 from ...domain.services import (
     IAudioDownloaderService,
     IYouTubeSearchService,
@@ -64,7 +64,8 @@ class YtDlpAudioDownloader(IAudioDownloaderService, IYouTubeSearchService):
         # Detect JavaScript runtime (Node.js or Deno) for YouTube signature/challenge solving
         node_path = shutil.which("node") or shutil.which("deno")
         if node_path:
-            opts["js_runtimes"] = {"node": {}}
+            runtime_name = "deno" if "deno" in Path(node_path).name.lower() else "node"
+            opts["js_runtimes"] = {runtime_name: {"path": node_path}}
 
         # Check for cookies file in common locations
         cookie_candidates = [
@@ -172,14 +173,28 @@ class YtDlpAudioDownloader(IAudioDownloaderService, IYouTubeSearchService):
         output_directory: str,
         quality: AudioQuality = AudioQuality.BEST,
         progress_callback: Optional[ProgressCallback] = None,
+        skip_non_music_sections: bool = True,
+        cancel_check: Optional[Callable[[], bool]] = None,
     ) -> str:
-        """Downloads audio stream using yt-dlp and converts to high-quality audio."""
+        """Downloads native high-fidelity audio stream using yt-dlp without intermediate lossy re-encoding."""
+        if cancel_check and cancel_check():
+            raise DownloadCancelledException("Descarga cancelada por el usuario.")
+
+        if not (url.startswith("http://") or url.startswith("https://")):
+            raise DownloadException(
+                f"La URL '{url}' no es un esquema web soportado por YouTube. "
+                "Las pistas locales no pueden descargarse a través de yt-dlp."
+            )
+
         out_dir = Path(output_directory)
         out_dir.mkdir(parents=True, exist_ok=True)
 
         downloaded_file_holder: list[str] = []
 
         def ytdlp_hook(d: dict[str, Any]) -> None:
+            if cancel_check and cancel_check():
+                raise DownloadCancelledException("Descarga cancelada por el usuario.")
+
             status = d.get("status")
             if status == "downloading":
                 total_bytes = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
@@ -207,32 +222,34 @@ class YtDlpAudioDownloader(IAudioDownloaderService, IYouTubeSearchService):
                 if progress_callback:
                     progress_callback(100.0, "", "")
 
-        # Configure quality
-        quality_map = {
-            AudioQuality.BEST: "0",
-            AudioQuality.HIGH_320K: "320",
-            AudioQuality.MID_256K: "256",
-            AudioQuality.LOW_128K: "128",
-        }
-        preferred_quality = quality_map.get(quality, "0")
-
         out_template = str(out_dir / "%(id)s_raw.%(ext)s")
 
+        postprocessors: list[dict[str, Any]] = []
+        if skip_non_music_sections:
+            postprocessors.extend([
+                {
+                    "key": "SponsorBlock",
+                    "categories": {"music_offtopic"},
+                    "when": "after_filter",
+                },
+                {
+                    "key": "ModifyChapters",
+                    "remove_sponsor_segments": {"music_offtopic"},
+                },
+            ])
+
         ydl_opts = self._build_ydl_opts({
-            "format": "bestaudio/best",
+            "format": "bestaudio[acodec=opus]/bestaudio[ext=m4a]/bestaudio/best",
             "outtmpl": out_template,
             "noplaylist": True,
+            "concurrent_fragment_downloads": 4,
+            "buffersize": 1024 * 1024,
+            "http_chunk_size": 10485760,
             "progress_hooks": [ytdlp_hook],
-            "postprocessors": [
-                {
-                    "key": "FFmpegExtractAudio",
-                    "preferredcodec": "mp3",
-                    "preferredquality": preferred_quality,
-                }
-            ],
+            "postprocessors": postprocessors,
         })
 
-        logger.info("Starting yt-dlp download for: %s", url)
+        logger.info("Starting yt-dlp native stream download for: %s (SponsorBlock=%s)", url, skip_non_music_sections)
 
         try:
             with yt_dlp.YoutubeDL(cast(Any, ydl_opts)) as ydl:
@@ -241,28 +258,48 @@ class YtDlpAudioDownloader(IAudioDownloaderService, IYouTubeSearchService):
                     raise DownloadException("yt-dlp no pudo extraer información del video.")
 
                 youtube_id = str(info.get("id") or "track")
-                # Expected destination after postprocessing
-                expected_mp3 = out_dir / f"{youtube_id}_raw.mp3"
-                if expected_mp3.exists():
-                    return str(expected_mp3)
 
-                # Check if holder captured it
+                # Check if holder captured the final downloaded stream
                 if downloaded_file_holder:
                     cand = Path(downloaded_file_holder[-1])
-                    mp3_cand = cand.with_suffix(".mp3")
-                    if mp3_cand.exists():
-                        return str(mp3_cand)
                     if cand.exists():
                         return str(cand)
 
-                # Fallback search in directory
-                matches = list(out_dir.glob(f"{youtube_id}_raw.*"))
+                # Search for raw stream file in directory (.webm, .opus, .m4a, .mp3, etc.)
+                matches = [
+                    p for p in out_dir.glob(f"{youtube_id}_raw.*")
+                    if not p.name.endswith(".part") and not p.name.endswith(".ytdl")
+                ]
                 if matches:
                     return str(matches[0])
 
                 raise DownloadException("El archivo descargado no fue encontrado en el disco.")
 
         except Exception as e:
+            is_cancelled = (
+                isinstance(e, DownloadCancelledException)
+                or (e.__cause__ and isinstance(e.__cause__, DownloadCancelledException))
+                or "DownloadCancelledException" in type(e).__name__
+                or "Descarga cancelada por el usuario" in str(e)
+                or (cancel_check and cancel_check())
+            )
+            if is_cancelled:
+                logger.info("Download cancelled for %s; cleaning up temporary files", url)
+                parsed_id = ""
+                if "v=" in url:
+                    parsed_id = url.split("v=")[1].split("&")[0]
+                elif "/" in url:
+                    parsed_id = url.rstrip("/").split("/")[-1]
+
+                pattern = f"{parsed_id}*" if parsed_id else "*_raw.*"
+                try:
+                    for p in out_dir.glob(pattern):
+                        if p.is_file() and not p.name.endswith(".mp3"):
+                            p.unlink(missing_ok=True)
+                except Exception as clean_err:
+                    logger.warning("Error cleaning partial download files: %s", clean_err)
+                raise DownloadCancelledException("Descarga cancelada por el usuario.")
+
             if isinstance(e, DownloadException):
                 raise
             logger.error("Download failed for %s: %s", url, e)

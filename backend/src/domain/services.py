@@ -34,6 +34,8 @@ class IAudioDownloaderService(ABC):
         output_directory: str,
         quality: AudioQuality = AudioQuality.BEST,
         progress_callback: Optional[ProgressCallback] = None,
+        skip_non_music_sections: bool = True,
+        cancel_check: Optional[Callable[[], bool]] = None,
     ) -> str:
         """Downloads audio stream in best quality and returns the downloaded file path."""
         raise NotImplementedError
@@ -49,6 +51,9 @@ class IAudioProcessorService(ABC):
         output_directory: str,
         target_loudness_lufs: float = -14.0,
         progress_callback: Optional[Callable[[float, str], None]] = None,
+        quality: AudioQuality = AudioQuality.BEST,
+        trim_silence: bool = True,
+        cancel_check: Optional[Callable[[], bool]] = None,
     ) -> str:
         """Applies loudnorm and silenceremove filters and returns the processed audio path."""
         raise NotImplementedError

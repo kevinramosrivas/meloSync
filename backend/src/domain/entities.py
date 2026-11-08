@@ -233,9 +233,11 @@ class Track:
         self.status = DownloadStatus.ERROR
         self.updated_at = utc_now()
 
-    def mark_cancelled(self) -> None:
+    def mark_cancelled(self, message: str = "Descarga cancelada por el usuario") -> None:
         """Cancels download pipeline."""
         self.transition_to(DownloadStatus.CANCELADA)
+        self.error_message = message
+        self.updated_at = utc_now()
 
 
 @dataclass
@@ -272,5 +274,7 @@ class AppSettings:
     default_audio_quality: AudioQuality = AudioQuality.BEST
     normalize_audio_lufs: float = -14.0
     auto_tag_metadata: bool = True
+    skip_non_music_sections: bool = True
+    trim_silence: bool = True
     id: str = "default_settings"
     updated_at: datetime = field(default_factory=utc_now)

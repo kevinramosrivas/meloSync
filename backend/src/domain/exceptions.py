@@ -40,6 +40,11 @@ class DownloadException(MeloSyncDomainException):
     pass
 
 
+class DownloadCancelledException(MeloSyncDomainException):
+    """Raised when a download pipeline is explicitly cancelled by the user."""
+    pass
+
+
 class AudioProcessingException(MeloSyncDomainException):
     """Raised when ffmpeg normalization or audio conversion fails."""
     pass
