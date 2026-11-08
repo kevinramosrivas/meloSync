@@ -13,7 +13,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse, StreamingResponse
 
 from ..dependencies import Container, get_container
-from ..schemas import SyncLibraryResponse, TrackResponse
+from ..schemas import (
+    BatchDeleteTracksRequest,
+    BatchDeleteTracksResponse,
+    SyncLibraryResponse,
+    TrackResponse,
+)
 from ...application.services.path_resolver import TrackFileResolver
 from ...domain.entities import DownloadStatus
 from ...domain.exceptions import TrackNotFoundException
@@ -26,12 +31,24 @@ router = APIRouter(prefix="/library", tags=["Library"])
 @router.get("", response_model=list[TrackResponse])
 def get_library(
     status: Optional[DownloadStatus] = None,
+    location: Optional[str] = Query(None, description="Location filter: 'all', 'active', 'other', 'missing'"),
     container: Container = Depends(get_container),
 ):
-    """Retrieves all tracks in the library, optionally filtered by status."""
+    """Retrieves all tracks in the library, optionally filtered by status and file location."""
     use_case = container.get_library_use_case()
     tracks = use_case.execute(status=status)
-    return [TrackResponse.from_dto(t) for t in tracks]
+    settings = container.get_settings_use_case().execute()
+    active_dir = Path(settings.music_download_directory).resolve()
+
+    responses = [TrackResponse.from_dto(t, active_dir=active_dir) for t in tracks]
+    if location == "active":
+        responses = [r for r in responses if r.is_in_active_directory and r.file_exists]
+    elif location == "missing":
+        responses = [r for r in responses if not r.file_exists]
+    elif location == "other":
+        responses = [r for r in responses if not r.is_in_active_directory and r.file_exists]
+
+    return responses
 
 
 @router.post("/sync", response_model=SyncLibraryResponse)
@@ -246,6 +263,26 @@ def delete_track(
         raise HTTPException(status_code=404, detail="No se pudo eliminar la pista.")
     except TrackNotFoundException:
         raise HTTPException(status_code=404, detail="Pista no encontrada.")
+
+
+@router.post("/batch-delete", response_model=BatchDeleteTracksResponse)
+def batch_delete_tracks(
+    request: BatchDeleteTracksRequest,
+    container: Container = Depends(get_container),
+):
+    """Deletes multiple tracks and their associated audio files in an atomic transaction."""
+    use_case = container.get_batch_delete_tracks_use_case()
+    deleted_count, failed_ids = use_case.execute(
+        track_ids=request.track_ids,
+        delete_file=request.delete_files,
+    )
+    if deleted_count > 0:
+        container.ws_manager.publish_library_updated()
+    return BatchDeleteTracksResponse(
+        message=f"{deleted_count} canciones eliminadas correctamente.",
+        deleted_count=deleted_count,
+        failed_ids=failed_ids,
+    )
 
 
 @router.post("/{track_id}/record-play")

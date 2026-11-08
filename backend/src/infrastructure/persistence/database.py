@@ -21,6 +21,7 @@ from sqlalchemy import (
     create_engine,
     event,
 )
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -237,6 +238,8 @@ class SettingsModel(Base):
     default_audio_quality: Mapped[str] = mapped_column(String(32), default=AudioQuality.BEST.value)
     normalize_audio_lufs: Mapped[float] = mapped_column(Float, default=-14.0)
     auto_tag_metadata: Mapped[bool] = mapped_column(Boolean, default=True)
+    skip_non_music_sections: Mapped[bool] = mapped_column(Boolean, default=True)
+    trim_silence: Mapped[bool] = mapped_column(Boolean, default=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     def to_domain(self) -> AppSettings:
@@ -247,6 +250,8 @@ class SettingsModel(Base):
             default_audio_quality=quality,
             normalize_audio_lufs=self.normalize_audio_lufs,
             auto_tag_metadata=self.auto_tag_metadata,
+            skip_non_music_sections=bool(self.skip_non_music_sections) if self.skip_non_music_sections is not None else True,
+            trim_silence=bool(self.trim_silence) if self.trim_silence is not None else True,
             updated_at=self.updated_at,
         )
 
@@ -258,8 +263,33 @@ class SettingsModel(Base):
             default_audio_quality=s.default_audio_quality.value,
             normalize_audio_lufs=s.normalize_audio_lufs,
             auto_tag_metadata=s.auto_tag_metadata,
+            skip_non_music_sections=s.skip_non_music_sections,
+            trim_silence=s.trim_silence,
             updated_at=s.updated_at,
         )
+
+
+class ArtistMetadataCacheModel(Base):
+    """Persistent SQLite cache for official artist portraits and biographies."""
+    __tablename__ = "artist_metadata_cache"
+
+    artist_key: Mapped[str] = mapped_column(String(256), primary_key=True)
+    artist_name: Mapped[str] = mapped_column(String(256), nullable=False)
+    portrait_url: Mapped[Optional[str]] = mapped_column(String(1024), nullable=True)
+    bio: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class GenreMetadataCacheModel(Base):
+    """Persistent SQLite cache for canonical genre artwork URLs."""
+    __tablename__ = "genre_metadata_cache"
+
+    genre_key: Mapped[str] = mapped_column(String(128), primary_key=True)
+    genre_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    artwork_url: Mapped[Optional[str]] = mapped_column(String(1024), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
 
 class DatabaseManager:
@@ -269,21 +299,25 @@ class DatabaseManager:
         self._db_path = db_path
         if db_path != ":memory:":
             Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-            db_url = f"sqlite:///{db_path}"
+            self.engine = create_engine(
+                f"sqlite:///{db_path}",
+                connect_args={"check_same_thread": False, "timeout": 30.0},
+                echo=False,
+            )
         else:
-            db_url = "sqlite:///:memory:"
-
-        self.engine = create_engine(
-            db_url,
-            connect_args={"check_same_thread": False, "timeout": 30.0},
-            echo=False,
-        )
+            self.engine = create_engine(
+                "sqlite:///:memory:",
+                connect_args={"check_same_thread": False},
+                poolclass=StaticPool,
+                echo=False,
+            )
 
         # Enable SQLite WAL mode, busy timeout, and foreign keys
         @event.listens_for(self.engine, "connect")
         def set_sqlite_pragma(dbapi_connection, connection_record):
             cursor = dbapi_connection.cursor()
-            cursor.execute("PRAGMA journal_mode=WAL")
+            if self._db_path != ":memory:":
+                cursor.execute("PRAGMA journal_mode=WAL")
             cursor.execute("PRAGMA synchronous=NORMAL")
             cursor.execute("PRAGMA busy_timeout = 30000")
             cursor.execute("PRAGMA foreign_keys=ON")
@@ -344,6 +378,23 @@ class DatabaseManager:
                         logger.info("Migrated column '%s' into 'playlists' table", col_name)
                     except Exception as e:
                         logger.warning("Could not add column %s to playlists: %s", col_name, e)
+
+            # 3. Migrate settings table columns
+            cursor.execute("PRAGMA table_info(settings)")
+            existing_settings_cols = {row[1] for row in cursor.fetchall()}
+
+            settings_cols_to_add = {
+                "skip_non_music_sections": "BOOLEAN DEFAULT 1",
+                "trim_silence": "BOOLEAN DEFAULT 1",
+            }
+
+            for col_name, col_type in settings_cols_to_add.items():
+                if col_name not in existing_settings_cols and existing_settings_cols:
+                    try:
+                        cursor.execute(f"ALTER TABLE settings ADD COLUMN {col_name} {col_type}")
+                        logger.info("Migrated column '%s' into 'settings' table", col_name)
+                    except Exception as e:
+                        logger.warning("Could not add column %s to settings: %s", col_name, e)
 
             conn.connection.commit()
 

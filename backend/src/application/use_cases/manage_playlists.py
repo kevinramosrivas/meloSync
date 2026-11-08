@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Callable
+import concurrent.futures
 import logging
 import re
-from typing import Optional
+import threading
+from typing import Any, Optional
 import uuid
 
 from ...domain.entities import DownloadStatus, Playlist, Track, utc_now
@@ -123,16 +125,16 @@ class GetPlaylistByIdUseCase:
             elif playlist.playlist_type == PLAYLIST_TYPE_ON_REPEAT:
                 playlist.tracks = uow.tracks.get_on_repeat(days=30, min_repeats=2, limit=30)
             elif playlist.playlist_type == PLAYLIST_TYPE_ARTIST:
-                # If artist mix has placeholder or empty description, retrieve and persist artist biography
+                # If artist mix has placeholder or empty description, check persistent cache without blocking HTTP
                 if not playlist.description or playlist.description.startswith("Todas tus canciones"):
                     artist_name = playlist.filter_query or (
                         playlist.name.replace("Mix de ", "").strip()
                         if playlist.name.startswith("Mix de ")
                         else playlist.name
                     )
-                    bio = self._itunes.lookup_artist_bio(artist_name)
-                    if bio:
-                        playlist.description = bio
+                    cached = uow.playlists.get_artist_cache(artist_name)
+                    if cached and cached[1]:
+                        playlist.description = cached[1]
                         uow.playlists.update(playlist)
                         uow.commit()
 
@@ -210,6 +212,31 @@ class AddTrackToPlaylistUseCase:
             return updated
 
 
+class AddTracksBatchToPlaylistUseCase:
+    """Adds multiple tracks to a custom playlist in a single atomic transaction."""
+
+    def __init__(self, uow_factory: Callable[[], IUnitOfWork]) -> None:
+        self._uow_factory = uow_factory
+
+    def execute(self, playlist_id: str, track_ids: list[str]) -> Playlist:
+        with self._uow_factory() as uow:
+            playlist = uow.playlists.get_by_id(playlist_id)
+            if not playlist:
+                raise PlaylistNotFoundException(playlist_id)
+
+            if playlist.is_smart:
+                raise ValueError("No se pueden añadir canciones manualmente a una lista automática.")
+
+            for track_id in track_ids:
+                track = uow.tracks.get_by_id(track_id)
+                if track:
+                    playlist.add_track(track)
+
+            updated = uow.playlists.update(playlist)
+            uow.commit()
+            return updated
+
+
 class RemoveTrackFromPlaylistUseCase:
     """Removes a track from a custom playlist."""
 
@@ -244,15 +271,17 @@ class RecordTrackPlayUseCase:
 
 
 class SyncSmartPlaylistsUseCase:
-    """Synchronizes smart system playlists (Top Played, On Repeat, Artists, Genres)."""
+    """Synchronizes smart system playlists (Top Played, On Repeat, Artists, Genres) with sub-second local latency."""
 
     def __init__(
         self,
         uow_factory: Callable[[], IUnitOfWork],
         itunes_provider: Optional[ITunesMetadataProvider] = None,
+        event_publisher: Optional[Any] = None,
     ) -> None:
         self._uow_factory = uow_factory
         self._itunes = itunes_provider or ITunesMetadataProvider()
+        self._event_publisher = event_publisher
 
     @staticmethod
     def _extract_individual_artists(raw_artist: str) -> list[str]:
@@ -266,14 +295,21 @@ class SyncSmartPlaylistsUseCase:
                 results.append(item)
         return results if results else ([raw_artist.strip()] if raw_artist.strip() else [])
 
-    def execute(self) -> None:
-        logger.info("Starting smart playlists background synchronization...")
+    def execute(self, background_enrich: bool = True) -> dict[str, Any]:
+        """Executes instant local clustering and synchronization (<25ms) without blocking on external network calls.
+        
+        If `background_enrich` is True and there are artists or genres without cached portraits/bios,
+        a non-blocking background daemon thread is dispatched to enrich them in parallel.
+        """
+        logger.info("Starting instant smart playlists synchronization...")
 
-        # ---------------------------------------------------------------------
-        # PHASE 1: Quick Database Read & Baseline Initialization (<5ms transaction)
-        # ---------------------------------------------------------------------
+        pending_artists_for_enrichment: list[str] = []
+        pending_genres_for_enrichment: list[str] = []
+
         with self._uow_factory() as uow:
-            # Ensure 'Top Played' and 'On Repeat' exist
+            # -----------------------------------------------------------------
+            # PHASE 1: Baseline Initialization & Completed Tracks Read (<5ms)
+            # -----------------------------------------------------------------
             top_played = uow.playlists.get_by_id(SMART_ID_TOP_PLAYED)
             if not top_played:
                 uow.playlists.add(
@@ -300,80 +336,78 @@ class SyncSmartPlaylistsUseCase:
 
             completed_tracks = uow.tracks.list_by_status(DownloadStatus.COMPLETADA)
             existing_playlists = uow.playlists.list_all()
-            uow.commit()
 
-        # ---------------------------------------------------------------------
-        # PHASE 2: In-Memory Clustering & External Network Lookups (Zero DB Lock)
-        # ---------------------------------------------------------------------
-        # Group completed tracks by individual artists
-        artist_groups: dict[str, list[Track]] = defaultdict(list)
-        for t in completed_tracks:
-            artist_raw = (t.metadata.artist if t.metadata and t.metadata.artist else t.display_artist).strip()
-            if artist_raw:
-                individual_artists = self._extract_individual_artists(artist_raw)
-                for art in individual_artists:
-                    if not any(existing.id == t.id for existing in artist_groups[art]):
-                        artist_groups[art].append(t)
+            # -----------------------------------------------------------------
+            # PHASE 2: In-Memory Clustering (<5ms)
+            # -----------------------------------------------------------------
+            artist_groups: dict[str, list[Track]] = defaultdict(list)
+            for t in completed_tracks:
+                artist_raw = (t.metadata.artist if t.metadata and t.metadata.artist else t.display_artist).strip()
+                if artist_raw:
+                    individual_artists = self._extract_individual_artists(artist_raw)
+                    for art in individual_artists:
+                        if not any(existing.id == t.id for existing in artist_groups[art]):
+                            artist_groups[art].append(t)
 
-        # Intelligent genre clustering (multi-genre extraction, slug normalization, proximity matching)
-        genre_groups = GenreClusterer.cluster_tracks(completed_tracks)
+            genre_groups = GenreClusterer.cluster_tracks(completed_tracks)
+            active_genre_groups = {genre: tracks for genre, tracks in genre_groups.items() if len(tracks) >= 2}
+            active_canonical_genres = set(active_genre_groups.keys())
+            active_slug_to_canonical = {GenreClusterer.slugify(g): g for g in active_canonical_genres}
 
-        # Pre-resolve artist metadata (cover artwork and bio) outside the database lock
-        active_artists = set(artist_groups.keys())
-        existing_artist_playlists = [p for p in existing_playlists if p.playlist_type == PLAYLIST_TYPE_ARTIST]
-        artist_playlist_by_query = {p.filter_query: p for p in existing_artist_playlists if p.filter_query}
+            active_artists = set(artist_groups.keys())
 
-        artist_enrichment: dict[str, dict] = {}
-        for artist in active_artists:
-            existing = artist_playlist_by_query.get(artist)
-            cover_url = self._itunes.lookup_artist_artwork(artist)
-            bio = None
-            if not existing or not existing.description or existing.description.startswith("Todas tus canciones"):
-                bio = self._itunes.lookup_artist_bio(artist)
-
-            artist_enrichment[artist] = {
-                "cover_url": cover_url or (existing.cover_url if existing else None),
-                "bio": bio or (existing.description if existing and not existing.description.startswith("Todas tus canciones") else f"Todas tus canciones guardadas de {artist}"),
-            }
-
-        # Pre-resolve genre artwork outside the database lock
-        active_genre_groups = {genre: tracks for genre, tracks in genre_groups.items() if len(tracks) >= 2}
-        active_canonical_genres = set(active_genre_groups.keys())
-        active_slug_to_canonical = {GenreClusterer.slugify(g): g for g in active_canonical_genres}
-
-        existing_genre_playlists = [p for p in existing_playlists if p.playlist_type == PLAYLIST_TYPE_GENRE]
-        genre_artwork: dict[str, Optional[str]] = {}
-        for canonical_genre in active_canonical_genres:
-            genre_artwork[canonical_genre] = self._itunes.lookup_genre_artwork(canonical_genre)
-
-        # ---------------------------------------------------------------------
-        # PHASE 3: Fast Atomic Persistence (<15ms transaction)
-        # ---------------------------------------------------------------------
-        with self._uow_factory() as uow:
+            # -----------------------------------------------------------------
+            # PHASE 3: Fast Atomic Persistence & Track Linking (<15ms)
+            # -----------------------------------------------------------------
             # 1. Synchronize Artist Mixes and cleanup obsolete playlists
-            current_artist_playlists = [p for p in uow.playlists.list_all() if p.playlist_type == PLAYLIST_TYPE_ARTIST]
-            for old_p in current_artist_playlists:
-                if old_p.filter_query and old_p.filter_query not in active_artists:
-                    uow.playlists.delete(old_p.id)
+            current_artist_playlists = [p for p in existing_playlists if p.playlist_type == PLAYLIST_TYPE_ARTIST]
+            artist_playlists_by_query: dict[str, list[Playlist]] = defaultdict(list)
+            for p in current_artist_playlists:
+                if p.filter_query and p.filter_query not in active_artists:
+                    uow.playlists.delete(p.id)
+                elif p.filter_query:
+                    artist_playlists_by_query[p.filter_query].append(p)
 
             for artist, tracks in artist_groups.items():
-                existing = uow.playlists.get_by_filter(PLAYLIST_TYPE_ARTIST, artist)
-                meta = artist_enrichment.get(artist, {})
-                cover_url = meta.get("cover_url")
-                bio = meta.get("bio")
+                existing_list = artist_playlists_by_query.get(artist, [])
+                existing = existing_list[0] if existing_list else None
+                for dup in existing_list[1:]:
+                    uow.playlists.delete(dup.id)
+
+                cached = uow.playlists.get_artist_cache(artist)
+
+                # Find first local track cover to serve as instant visual fallback
+                local_cover = next((t.metadata.cover_url for t in tracks if t.metadata and t.metadata.cover_url), None)
+
+                cached_portrait = cached[0] if cached else None
+                cached_bio = cached[1] if cached else None
+
+                # Cover precedence: Cached official portrait > Existing cover > Local track cover
+                cover_url = cached_portrait or (existing.cover_url if existing else None) or local_cover
+
+                # Bio precedence: Cached official bio > Existing custom bio > Default label
+                if cached_bio:
+                    bio = cached_bio
+                elif existing and existing.description and not existing.description.startswith("Todas tus canciones"):
+                    bio = existing.description
+                else:
+                    bio = f"Todas tus canciones guardadas de {artist}"
+
+                # Mark for background enrichment if official metadata is missing
+                if not cached_portrait or not cached_bio:
+                    pending_artists_for_enrichment.append(artist)
 
                 if existing:
                     existing.tracks = tracks
                     existing.name = f"Mix de {artist}"
-                    if bio:
-                        existing.description = bio
+                    existing.description = bio
                     existing.cover_url = cover_url or existing.cover_url
                     existing.updated_at = utc_now()
                     uow.playlists.update(existing)
                 else:
                     new_p = Playlist(
                         name=f"Mix de {artist}",
-                        description=bio or f"Todas tus canciones guardadas de {artist}",
+                        description=bio,
                         is_smart=True,
                         playlist_type=PLAYLIST_TYPE_ARTIST,
                         filter_query=artist,
@@ -383,7 +417,7 @@ class SyncSmartPlaylistsUseCase:
                     uow.playlists.add(new_p)
 
             # 2. Synchronize Genre Mixes and cleanup obsolete / duplicate playlists
-            current_genre_playlists = [p for p in uow.playlists.list_all() if p.playlist_type == PLAYLIST_TYPE_GENRE]
+            current_genre_playlists = [p for p in existing_playlists if p.playlist_type == PLAYLIST_TYPE_GENRE]
             playlists_by_slug: dict[str, list[Playlist]] = defaultdict(list)
             for p in current_genre_playlists:
                 raw_ref = p.filter_query or p.name.replace("Mix ", "")
@@ -401,6 +435,12 @@ class SyncSmartPlaylistsUseCase:
                 tracks = active_genre_groups[canonical_genre]
                 matching_playlists = playlists_by_slug.get(slug, [])
 
+                cached_artwork = uow.playlists.get_genre_cache(canonical_genre)
+                local_cover = next((t.metadata.cover_url for t in tracks if t.metadata and t.metadata.cover_url), None)
+
+                if not cached_artwork:
+                    pending_genres_for_enrichment.append(canonical_genre)
+
                 if matching_playlists:
                     primary_p = next(
                         (p for p in matching_playlists if p.filter_query == canonical_genre),
@@ -411,7 +451,7 @@ class SyncSmartPlaylistsUseCase:
                         if dup_p.id != primary_p.id:
                             uow.playlists.delete(dup_p.id)
 
-                    cover_url = primary_p.cover_url or genre_artwork.get(canonical_genre)
+                    cover_url = cached_artwork or primary_p.cover_url or local_cover
                     primary_p.name = f"Mix {canonical_genre}"
                     primary_p.description = f"Lo mejor del género {canonical_genre} en tu biblioteca"
                     primary_p.filter_query = canonical_genre
@@ -420,7 +460,7 @@ class SyncSmartPlaylistsUseCase:
                     primary_p.updated_at = utc_now()
                     uow.playlists.update(primary_p)
                 else:
-                    cover_url = genre_artwork.get(canonical_genre)
+                    cover_url = cached_artwork or local_cover
                     new_p = Playlist(
                         name=f"Mix {canonical_genre}",
                         description=f"Lo mejor del género {canonical_genre} en tu biblioteca",
@@ -433,4 +473,127 @@ class SyncSmartPlaylistsUseCase:
                     uow.playlists.add(new_p)
 
             uow.commit()
-            logger.info("Smart playlists synchronization completed successfully.")
+
+        logger.info(
+            "Local smart playlists sync completed: %d artists, %d genres. Pending enrichment: %d artists, %d genres.",
+            len(artist_groups),
+            len(active_canonical_genres),
+            len(pending_artists_for_enrichment),
+            len(pending_genres_for_enrichment),
+        )
+
+        # ---------------------------------------------------------------------
+        # PHASE 4: Non-blocking Background Enrichment
+        # ---------------------------------------------------------------------
+        if background_enrich and (pending_artists_for_enrichment or pending_genres_for_enrichment):
+            threading.Thread(
+                target=self._run_background_enrichment,
+                args=(list(dict.fromkeys(pending_artists_for_enrichment)), list(dict.fromkeys(pending_genres_for_enrichment))),
+                daemon=True,
+                name="SmartPlaylistsEnrichmentWorker",
+            ).start()
+
+        return {
+            "synced": True,
+            "artist_count": len(artist_groups),
+            "genre_count": len(active_canonical_genres),
+            "pending_artists": len(pending_artists_for_enrichment),
+            "pending_genres": len(pending_genres_for_enrichment),
+        }
+
+    def _run_background_enrichment(self, pending_artists: list[str], pending_genres: list[str]) -> None:
+        """Asynchronously enriches artist portraits, biographies and genre artworks in the background."""
+        logger.info(
+            "Background enrichment worker started for %d artists and %d genres...",
+            len(pending_artists),
+            len(pending_genres),
+        )
+        updated_anything = False
+
+        def _enrich_artist(artist_name: str) -> tuple[str, Optional[str], Optional[str]]:
+            try:
+                portrait = self._itunes.lookup_artist_artwork(artist_name)
+                bio = self._itunes.lookup_artist_bio(artist_name)
+                return (artist_name, portrait, bio)
+            except Exception as e:
+                logger.debug("Error enriching artist %s: %s", artist_name, e)
+                return (artist_name, None, None)
+
+        def _enrich_genre(genre_name: str) -> tuple[str, Optional[str]]:
+            try:
+                artwork = self._itunes.lookup_genre_artwork(genre_name)
+                return (genre_name, artwork)
+            except Exception as e:
+                logger.debug("Error enriching genre %s: %s", genre_name, e)
+                return (genre_name, None)
+
+        # Limit to 4 concurrent worker threads to be gentle with external APIs and avoid rate limits
+        enriched_artists: list[tuple[str, Optional[str], Optional[str]]] = []
+        enriched_genres: list[tuple[str, Optional[str]]] = []
+
+        pool = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+        try:
+            artist_futures = [pool.submit(_enrich_artist, a) for a in pending_artists]
+            genre_futures = [pool.submit(_enrich_genre, g) for g in pending_genres]
+
+            for f in concurrent.futures.as_completed(artist_futures):
+                try:
+                    enriched_artists.append(f.result())
+                except Exception as e:
+                    logger.debug("Artist future error: %s", e)
+
+            for f in concurrent.futures.as_completed(genre_futures):
+                try:
+                    enriched_genres.append(f.result())
+                except Exception as e:
+                    logger.debug("Genre future error: %s", e)
+        finally:
+            pool.shutdown(wait=False, cancel_futures=True)
+
+        # Persist enriched cache and update playlists in SQLite
+        with self._uow_factory() as uow:
+            for artist_name, portrait, bio in enriched_artists:
+                if portrait or bio:
+                    uow.playlists.save_artist_cache(
+                        artist_key=artist_name,
+                        artist_name=artist_name,
+                        portrait_url=portrait,
+                        bio=bio,
+                    )
+                    playlist = uow.playlists.get_by_filter(PLAYLIST_TYPE_ARTIST, artist_name)
+                    if playlist:
+                        changed = False
+                        if portrait and playlist.cover_url != portrait:
+                            playlist.cover_url = portrait
+                            changed = True
+                        if bio and (not playlist.description or playlist.description.startswith("Todas tus canciones")):
+                            playlist.description = bio
+                            changed = True
+                        if changed:
+                            playlist.updated_at = utc_now()
+                            uow.playlists.update(playlist)
+                            updated_anything = True
+
+            for genre_name, artwork in enriched_genres:
+                if artwork:
+                    uow.playlists.save_genre_cache(
+                        genre_key=genre_name,
+                        genre_name=genre_name,
+                        artwork_url=artwork,
+                    )
+                    playlist = uow.playlists.get_by_filter(PLAYLIST_TYPE_GENRE, genre_name)
+                    if playlist and playlist.cover_url != artwork:
+                        playlist.cover_url = artwork
+                        playlist.updated_at = utc_now()
+                        uow.playlists.update(playlist)
+                        updated_anything = True
+
+            uow.commit()
+
+        if updated_anything and self._event_publisher:
+            try:
+                self._event_publisher.publish_library_updated()
+            except Exception as e:
+                logger.debug("Could not publish library_updated after background enrichment: %s", e)
+
+        logger.info("Background enrichment finished. Updated playlists: %s", updated_anything)

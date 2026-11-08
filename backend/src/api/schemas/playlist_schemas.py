@@ -23,6 +23,10 @@ class AddTrackToPlaylistRequest(BaseModel):
     track_id: str = Field(..., min_length=1)
 
 
+class BatchAddTracksRequest(BaseModel):
+    track_ids: list[str] = Field(..., min_length=1)
+
+
 class PlaylistSummaryResponse(BaseModel):
     id: str
     name: str

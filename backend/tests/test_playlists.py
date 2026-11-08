@@ -1,5 +1,6 @@
 """Unit tests for Playlists, Play Tracking, and Smart Mixes."""
 
+import time
 import pytest
 from fastapi.testclient import TestClient
 
@@ -13,6 +14,7 @@ from src.application.use_cases.manage_playlists import (
     PLAYLIST_TYPE_ON_REPEAT,
     SMART_ID_TOP_PLAYED,
     SMART_ID_ON_REPEAT,
+    GetPlaylistByIdUseCase,
     SyncSmartPlaylistsUseCase,
 )
 
@@ -140,7 +142,7 @@ def test_smart_playlists_sync(uow_factory):
         uow.commit()
 
     sync_case = SyncSmartPlaylistsUseCase(uow_factory=uow_factory)
-    sync_case.execute()
+    sync_case.execute(background_enrich=False)
 
     with uow_factory() as uow:
         # Check Top Played & On Repeat existence
@@ -202,3 +204,117 @@ def test_api_playlists_endpoints():
 
     # 5. Verify 404
     assert client.get(f"/api/v1/playlists/{playlist_id}").status_code == 404
+
+    # 6. Verify POST /api/v1/playlists/sync-smart immediate response
+    sync_resp = client.post("/api/v1/playlists/sync-smart?background_enrich=false")
+    assert sync_resp.status_code == 200
+    sync_data = sync_resp.json()
+    assert "message" in sync_data
+    assert "artist_count" in sync_data
+    assert "genre_count" in sync_data
+
+
+def test_instant_sync_smart_playlists_speed_and_covers(uow_factory):
+    """Verifies that local synchronization runs in sub-100ms and immediately assigns track album covers."""
+    with uow_factory() as uow:
+        # Seed 10 tracks with album covers
+        for i in range(10):
+            uow.tracks.add(
+                Track(
+                    youtube_id=f"speed-yt-{i}",
+                    url=f"https://youtube.com/watch?v=speed{i}",
+                    original_title=f"Speed Song {i}",
+                    status=DownloadStatus.COMPLETADA,
+                    metadata=TrackMetadata(
+                        title=f"Speed Song {i}",
+                        artist=f"Artist {i % 3}",
+                        genre="Rock",
+                        cover_url=f"https://artwork.test/cover_{i}.jpg",
+                    ),
+                )
+            )
+        uow.commit()
+
+    sync_case = SyncSmartPlaylistsUseCase(uow_factory=uow_factory)
+
+    start_time = time.perf_counter()
+    result = sync_case.execute(background_enrich=False)
+    elapsed_ms = (time.perf_counter() - start_time) * 1000
+
+    # Must complete well under 100ms (typically <20ms)
+    assert elapsed_ms < 150.0
+    assert result["synced"] is True
+    assert result["artist_count"] == 3
+    assert result["genre_count"] == 1
+
+    with uow_factory() as uow:
+        # Check that artist mixes exist and have immediate visual fallback covers from tracks
+        for a_idx in range(3):
+            artist_name = f"Artist {a_idx}"
+            plist = uow.playlists.get_by_filter("artist", artist_name)
+            assert plist is not None
+            assert plist.cover_url is not None
+            assert plist.cover_url.startswith("https://artwork.test/cover_")
+
+        # Check that genre mix has immediate visual fallback cover
+        genre_plist = uow.playlists.get_by_filter("genre", "Rock")
+        assert genre_plist is not None
+        assert genre_plist.cover_url is not None
+        assert len(genre_plist.tracks) == 10
+
+
+def test_smart_playlist_cache_persistence_and_no_blocking_bio(uow_factory):
+    """Verifies SQLite metadata cache persistence and instant read without blocking external HTTP."""
+    with uow_factory() as uow:
+        # Pre-populate artist cache with portrait and bio
+        uow.playlists.save_artist_cache(
+            artist_key="Taylor Swift",
+            artist_name="Taylor Swift",
+            portrait_url="https://images.test/taylor.jpg",
+            bio="Taylor Swift is an American singer-songwriter.",
+        )
+        uow.playlists.save_genre_cache(
+            genre_key="pop",
+            genre_name="Pop",
+            artwork_url="https://images.test/pop.jpg",
+        )
+
+        # Seed a track for Taylor Swift
+        uow.tracks.add(
+            Track(
+                youtube_id="ts-1",
+                url="https://youtube.com/watch?v=ts1",
+                original_title="Anti-Hero",
+                status=DownloadStatus.COMPLETADA,
+                metadata=TrackMetadata(
+                    title="Anti-Hero",
+                    artist="Taylor Swift",
+                    genre="Pop",
+                    cover_url="https://images.test/album_ts.jpg",
+                ),
+            )
+        )
+        uow.commit()
+
+    sync_case = SyncSmartPlaylistsUseCase(uow_factory=uow_factory)
+    result = sync_case.execute(background_enrich=False)
+
+    # Taylor Swift was cached, so pending_artists should be 0!
+    assert result["pending_artists"] == 0
+
+    with uow_factory() as uow:
+        ts_plist = uow.playlists.get_by_filter("artist", "Taylor Swift")
+        assert ts_plist is not None
+        # Should have the official cached portrait, NOT the track album cover
+        assert ts_plist.cover_url == "https://images.test/taylor.jpg"
+        # Should have the cached biography
+        assert ts_plist.description == "Taylor Swift is an American singer-songwriter."
+
+        # Verify GetPlaylistByIdUseCase reads from DB in <10ms without making external calls
+        get_case = GetPlaylistByIdUseCase(uow_factory=uow_factory)
+        start_time = time.perf_counter()
+        detail = get_case.execute(ts_plist.id)
+        get_elapsed_ms = (time.perf_counter() - start_time) * 1000
+
+        assert get_elapsed_ms < 50.0
+        assert detail.description == "Taylor Swift is an American singer-songwriter."

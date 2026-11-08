@@ -68,3 +68,39 @@ class DeleteTrackUseCase:
 
             success = uow.tracks.delete(track_id)
             return success
+
+
+class BatchDeleteTracksUseCase:
+    """Deletes multiple tracks and their associated audio files in a single atomic transaction."""
+
+    def __init__(self, uow_factory: Callable[[], IUnitOfWork]) -> None:
+        self._uow_factory = uow_factory
+
+    def execute(self, track_ids: list[str], delete_file: bool = True) -> tuple[int, list[str]]:
+        deleted_count = 0
+        failed_ids: list[str] = []
+        with self._uow_factory() as uow:
+            settings = uow.settings.get()
+            for track_id in track_ids:
+                track = uow.tracks.get_by_id(track_id)
+                if not track:
+                    failed_ids.append(track_id)
+                    continue
+
+                if delete_file and track.file_path:
+                    resolved = Path(track.file_path)
+                    if not resolved.is_absolute() and settings.music_download_directory:
+                        resolved = Path(settings.music_download_directory) / resolved
+                    if resolved.exists():
+                        try:
+                            resolved.unlink()
+                            logger.info("Deleted audio file from disk: %s", resolved)
+                        except Exception as e:
+                            logger.warning("Could not delete file %s: %s", resolved, e)
+
+                if uow.tracks.delete(track_id):
+                    deleted_count += 1
+                else:
+                    failed_ids.append(track_id)
+
+        return deleted_count, failed_ids

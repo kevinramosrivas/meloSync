@@ -9,6 +9,7 @@ from ...domain.exceptions import PlaylistNotFoundException, TrackNotFoundExcepti
 from ..dependencies import Container, get_container
 from ..schemas.playlist_schemas import (
     AddTrackToPlaylistRequest,
+    BatchAddTracksRequest,
     PlaylistCreateRequest,
     PlaylistDetailResponse,
     PlaylistSummaryResponse,
@@ -48,12 +49,19 @@ def create_playlist(
 
 @router.post("/sync-smart")
 def sync_smart_playlists(
+    background_enrich: bool = True,
     container: Container = Depends(get_container),
 ):
-    """Manually triggers background synchronization of smart playlists."""
+    """Triggers instant local synchronization of smart playlists with non-blocking background enrichment."""
     use_case = container.get_sync_smart_playlists_use_case()
-    use_case.execute()
-    return {"message": "Listas inteligentes sincronizadas correctamente."}
+    result = use_case.execute(background_enrich=background_enrich)
+    return {
+        "message": "Listas inteligentes sincronizadas correctamente.",
+        "artist_count": result.get("artist_count", 0),
+        "genre_count": result.get("genre_count", 0),
+        "pending_artists": result.get("pending_artists", 0),
+        "pending_genres": result.get("pending_genres", 0),
+    }
 
 
 @router.get("/{playlist_id}", response_model=PlaylistDetailResponse)
@@ -118,6 +126,23 @@ def add_track_to_playlist(
         raise HTTPException(status_code=404, detail="Lista de reproducción no encontrada.")
     except TrackNotFoundException:
         raise HTTPException(status_code=404, detail="Pista no encontrada.")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{playlist_id}/batch-tracks", response_model=PlaylistDetailResponse)
+def add_tracks_batch_to_playlist(
+    playlist_id: str,
+    request: BatchAddTracksRequest,
+    container: Container = Depends(get_container),
+) -> PlaylistDetailResponse:
+    """Adds multiple tracks to a custom playlist in a single atomic transaction."""
+    try:
+        use_case = container.get_add_tracks_batch_to_playlist_use_case()
+        updated = use_case.execute(playlist_id, request.track_ids)
+        return PlaylistDetailResponse.from_domain(updated)
+    except PlaylistNotFoundException:
+        raise HTTPException(status_code=404, detail="Lista de reproducción no encontrada.")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

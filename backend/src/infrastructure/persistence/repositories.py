@@ -16,6 +16,8 @@ from ...domain.repositories import (
     ITrackRepository,
 )
 from .database import (
+    ArtistMetadataCacheModel,
+    GenreMetadataCacheModel,
     PlaylistModel,
     SettingsModel,
     TrackModel,
@@ -192,7 +194,7 @@ class SqlAlchemyPlaylistRepository(IPlaylistRepository):
             .where(PlaylistModel.playlist_type == playlist_type)
             .where(PlaylistModel.filter_query == filter_query)
         )
-        model = self._session.execute(stmt).scalar_one_or_none()
+        model = self._session.execute(stmt).scalars().first()
         return model.to_domain() if model else None
 
     def update(self, playlist: Playlist) -> Playlist:
@@ -224,6 +226,59 @@ class SqlAlchemyPlaylistRepository(IPlaylistRepository):
             return True
         return False
 
+    def get_artist_cache(self, artist_key: str) -> Optional[tuple[Optional[str], Optional[str]]]:
+        model = self._session.get(ArtistMetadataCacheModel, artist_key.strip().lower())
+        if model:
+            return (model.portrait_url, model.bio)
+        return None
+
+    def save_artist_cache(
+        self, artist_key: str, artist_name: str, portrait_url: Optional[str], bio: Optional[str]
+    ) -> None:
+        key = artist_key.strip().lower()
+        model = self._session.get(ArtistMetadataCacheModel, key)
+        if not model:
+            model = ArtistMetadataCacheModel(
+                artist_key=key,
+                artist_name=artist_name.strip(),
+                portrait_url=portrait_url,
+                bio=bio,
+                created_at=utc_now(),
+                updated_at=utc_now(),
+            )
+            self._session.add(model)
+        else:
+            if portrait_url is not None:
+                model.portrait_url = portrait_url
+            if bio is not None:
+                model.bio = bio
+            model.artist_name = artist_name.strip()
+            model.updated_at = utc_now()
+        self._session.flush()
+
+    def get_genre_cache(self, genre_key: str) -> Optional[str]:
+        model = self._session.get(GenreMetadataCacheModel, genre_key.strip().lower())
+        return model.artwork_url if model else None
+
+    def save_genre_cache(self, genre_key: str, genre_name: str, artwork_url: Optional[str]) -> None:
+        key = genre_key.strip().lower()
+        model = self._session.get(GenreMetadataCacheModel, key)
+        if not model:
+            model = GenreMetadataCacheModel(
+                genre_key=key,
+                genre_name=genre_name.strip(),
+                artwork_url=artwork_url,
+                created_at=utc_now(),
+                updated_at=utc_now(),
+            )
+            self._session.add(model)
+        else:
+            if artwork_url is not None:
+                model.artwork_url = artwork_url
+            model.genre_name = genre_name.strip()
+            model.updated_at = utc_now()
+        self._session.flush()
+
 
 class SqlAlchemySettingsRepository(ISettingsRepository):
     """SQLAlchemy implementation of ISettingsRepository."""
@@ -251,6 +306,8 @@ class SqlAlchemySettingsRepository(ISettingsRepository):
             model.default_audio_quality = settings.default_audio_quality.value
             model.normalize_audio_lufs = settings.normalize_audio_lufs
             model.auto_tag_metadata = settings.auto_tag_metadata
+            model.skip_non_music_sections = settings.skip_non_music_sections
+            model.trim_silence = settings.trim_silence
             model.updated_at = settings.updated_at
 
         self._session.flush()

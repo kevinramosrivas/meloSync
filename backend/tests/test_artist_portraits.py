@@ -1,6 +1,6 @@
 import pytest
-from backend.src.infrastructure.metadata.itunes_provider import ITunesMetadataProvider
-from backend.src.application.use_cases.manage_playlists import SyncSmartPlaylistsUseCase
+from src.infrastructure.metadata.itunes_provider import ITunesMetadataProvider
+from src.application.use_cases.manage_playlists import SyncSmartPlaylistsUseCase
 
 
 def test_extract_primary_artist():
