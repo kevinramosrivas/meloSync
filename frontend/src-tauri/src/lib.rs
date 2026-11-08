@@ -8,6 +8,7 @@ use std::time::Duration;
 use tauri::{Emitter, Manager};
 
 pub mod windows_identity;
+pub mod windows_taskbar;
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
@@ -197,6 +198,7 @@ fn toggle_mini_player(app: tauri::AppHandle) -> Result<bool, String> {
         } else {
             mini_window.show().map_err(|e| e.to_string())?;
             let _ = mini_window.set_focus();
+            let _ = windows_taskbar::init_taskbar_controls(mini_window);
             Ok(true)
         }
     } else {
@@ -359,7 +361,13 @@ pub fn run() {
             is_mini_player_open,
             focus_main_window,
             start_dragging_window,
-            get_backend_port
+            get_backend_port,
+            windows_taskbar::init_taskbar_controls,
+            windows_taskbar::update_taskbar_track,
+            windows_taskbar::update_taskbar_playback,
+            windows_taskbar::update_taskbar_progress,
+            windows_taskbar::clear_taskbar_progress,
+            windows_taskbar::get_desktop_platform
         ])
         .setup(|app| {
             let (initial_port, already_running) = resolve_backend_port();
