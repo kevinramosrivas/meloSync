@@ -4,3 +4,4 @@ export * from './library-api.service';
 export * from './metadata-api.service';
 export * from './settings-api.service';
 export * from './playlists-api.service';
+export * from './backup-api.service';

@@ -4,3 +4,4 @@ export * from './download.model';
 export * from './settings.model';
 export * from './websocket-event.model';
 export * from './playlist.model';
+export * from './backup.model';

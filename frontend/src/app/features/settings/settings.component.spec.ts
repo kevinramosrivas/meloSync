@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SettingsComponent } from './settings.component';
 import { SettingsApiService } from '../../data/settings-api.service';
+import { BackupApiService } from '../../data/backup-api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CoverCacheService } from '../../core/services/cover-cache.service';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
-import { AppSettings } from '../../domain/models';
+import { AppSettings, MeloSyncBackupPayload, ImportBackupResult } from '../../domain/models';
 import { of, throwError } from 'rxjs';
 
 describe('SettingsComponent', () => {
@@ -16,12 +17,17 @@ describe('SettingsComponent', () => {
     default_audio_quality: 'best',
     normalize_audio_lufs: -14.0,
     auto_tag_metadata: true,
+    skip_non_music_sections: true,
+    trim_silence: true,
     backend_version: '2.1.0-test',
   };
 
   let settingsApiMock: {
     getSettings: ReturnType<typeof vi.fn>;
     updateSettings: ReturnType<typeof vi.fn>;
+    getStorageStats: ReturnType<typeof vi.fn>;
+    browseFolder: ReturnType<typeof vi.fn>;
+    consolidateLibrary: ReturnType<typeof vi.fn>;
     openMusicFolder: ReturnType<typeof vi.fn>;
   };
 
@@ -39,13 +45,67 @@ describe('SettingsComponent', () => {
   let userPrefsMock: {
     get: ReturnType<typeof vi.fn>;
     set: ReturnType<typeof vi.fn>;
+    preferences: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    taskbarControlsEnabled: ReturnType<typeof vi.fn>;
+  };
+
+  let backupApiMock: {
+    exportBackup: ReturnType<typeof vi.fn>;
+    importBackup: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(async () => {
     settingsApiMock = {
       getSettings: vi.fn().mockReturnValue(of(mockSettings)),
       updateSettings: vi.fn().mockReturnValue(of(mockSettings)),
+      getStorageStats: vi.fn().mockReturnValue(of({
+        active_directory: 'C:/Music/meloSync',
+        active_dir_track_count: 10,
+        other_locations_track_count: 2,
+        missing_files_count: 0,
+        total_library_tracks: 12,
+        active_dir_size_bytes: 104857600,
+        active_dir_size_formatted: '100.0 MB',
+      })),
+      browseFolder: vi.fn().mockReturnValue(of({ path: 'D:/NewFolder' })),
+      consolidateLibrary: vi.fn().mockReturnValue(of({
+        moved_count: 2,
+        already_there_count: 10,
+        missing_count: 0,
+        total_tracks: 12,
+        target_directory: 'D:/NewFolder',
+        message: 'Consolidación exitosa',
+      })),
       openMusicFolder: vi.fn().mockReturnValue(of({ message: 'Carpeta abierta', path: mockSettings.music_download_directory }))
+    };
+
+    backupApiMock = {
+      exportBackup: vi.fn().mockReturnValue(of({
+        format: 'melosync-backup',
+        version: 1,
+        exported_at_iso: '2026-11-07T12:00:00Z',
+        app_version: '2.0.0',
+        settings: {
+          default_audio_quality: 'best',
+          normalize_audio_lufs: -14.0,
+          auto_tag_metadata: true,
+          user_preferences: {}
+        },
+        tracks: [],
+        playlists: []
+      })),
+      importBackup: vi.fn().mockReturnValue(of({
+        status: 'success',
+        message: 'Importación exitosa',
+        total_tracks_in_backup: 1,
+        tracks_imported: 1,
+        tracks_already_present: 0,
+        tracks_queued_for_download: 1,
+        playlists_imported: 0,
+        settings_restored: true,
+        user_preferences: {}
+      }))
     };
 
     toastMock = {
@@ -66,13 +126,17 @@ describe('SettingsComponent', () => {
 
     userPrefsMock = {
       get: vi.fn().mockReturnValue(0.3),
-      set: vi.fn()
+      set: vi.fn(),
+      preferences: vi.fn().mockReturnValue({}),
+      update: vi.fn(),
+      taskbarControlsEnabled: vi.fn().mockReturnValue(true)
     };
 
     await TestBed.configureTestingModule({
       imports: [SettingsComponent],
       providers: [
         { provide: SettingsApiService, useValue: settingsApiMock },
+        { provide: BackupApiService, useValue: backupApiMock },
         { provide: ToastService, useValue: toastMock },
         { provide: CoverCacheService, useValue: coverCacheMock },
         { provide: UserPreferencesService, useValue: userPrefsMock }
@@ -95,7 +159,7 @@ describe('SettingsComponent', () => {
     expect(component.isDirty()).toBe(false);
 
     // Verify versions
-    expect(component.frontendVersion).toBe('1.0.1');
+    expect(component.frontendVersion).toBe('1.1.0');
     expect(component.backendVersion()).toBe('2.1.0-test');
   });
 
@@ -178,6 +242,8 @@ describe('SettingsComponent', () => {
       default_audio_quality: '320k',
       normalize_audio_lufs: -14.0,
       auto_tag_metadata: true,
+      skip_non_music_sections: true,
+      trim_silence: true,
     });
     expect(userPrefsMock.set).toHaveBeenCalledWith('defaultSearchProximityThreshold', 0.45);
     expect(toastMock.success).toHaveBeenCalledWith('Preferencias guardadas correctamente');
@@ -209,5 +275,66 @@ describe('SettingsComponent', () => {
   it('should compute cache percentage correctly', () => {
     // 42 out of 500 = ~8%
     expect(component.cachePercentage()).toBe(8);
+  });
+
+  it('should trigger backup export, call BackupApiService and notify user with toast', () => {
+    component.exportBackup();
+    expect(backupApiMock.exportBackup).toHaveBeenCalled();
+    expect(toastMock.success).toHaveBeenCalledWith('Respaldo exportado', expect.stringContaining('Se exportaron'));
+  });
+
+  it('should execute import, update user preferences, reload settings and display result', () => {
+    const mockPayload: MeloSyncBackupPayload = {
+      format: 'melosync-backup',
+      version: 1,
+      exported_at_iso: '2026-11-07T12:00:00Z',
+      app_version: '2.0.0',
+      settings: {
+        default_audio_quality: '320k',
+        normalize_audio_lufs: -14.0,
+        auto_tag_metadata: true,
+        user_preferences: { libraryViewMode: 'grid' }
+      },
+      tracks: [],
+      playlists: []
+    };
+
+    component.importPreview.set(mockPayload);
+    component.executeImport();
+
+    expect(backupApiMock.importBackup).toHaveBeenCalledWith(mockPayload, expect.objectContaining({
+      download_missing_audio: true,
+      restore_settings: true,
+      restore_preferences: true,
+    }));
+    expect(toastMock.success).toHaveBeenCalledWith('Importación completada', expect.stringContaining('canciones añadidas'));
+    expect(component.importPreview()).toBeNull();
+    expect(component.importResult()).toBeTruthy();
+  });
+
+  it('should load storage stats and call browseFolder', () => {
+    expect(settingsApiMock.getStorageStats).toHaveBeenCalled();
+    expect(component.storageStats()?.active_dir_track_count).toBe(10);
+
+    component.browseFolder();
+    expect(settingsApiMock.browseFolder).toHaveBeenCalled();
+    expect(component.downloadDir()).toBe('D:/NewFolder');
+  });
+
+  it('should show folder change modal when changing directory with existing tracks', () => {
+    component.downloadDir.set('E:/AnotherFolder');
+    component.saveSettings();
+
+    expect(component.showFolderChangeModal()).toBe(true);
+  });
+
+  it('should consolidate library and close modal when confirmConsolidateAndSave is called', () => {
+    component.downloadDir.set('D:/NewFolder');
+    component.showFolderChangeModal.set(true);
+
+    component.confirmConsolidateAndSave();
+    expect(settingsApiMock.updateSettings).toHaveBeenCalled();
+    expect(settingsApiMock.consolidateLibrary).toHaveBeenCalledWith('D:/NewFolder', true);
+    expect(component.showFolderChangeModal()).toBe(false);
   });
 });
