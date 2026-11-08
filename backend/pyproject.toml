@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "melosync-backend"
-version = "2.0.0"
+version = "2.1.0"
 description = "meloSync FastAPI and WebSockets Backend"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -14,7 +14,7 @@ dependencies = [
     "websockets>=13.0",
     "pydantic>=2.7.0",
     "SQLAlchemy>=2.0.0",
-    "yt-dlp>=2024.1.0",
+    "yt-dlp>=2026.10.26",
     "mutagen>=1.47.0",
     "httpx>=0.27.0",
 ]

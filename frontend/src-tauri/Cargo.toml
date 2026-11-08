@@ -1,6 +1,6 @@
 [package]
 name = "melosync"
-version = "1.0.1"
+version = "1.1.0"
 description = "meloSync Desktop Client"
 authors = ["meloSync Team"]
 edition = "2021"
