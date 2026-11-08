@@ -44,6 +44,8 @@ class UpdateSettingsUseCase:
                 default_audio_quality=command.default_audio_quality,
                 normalize_audio_lufs=command.normalize_audio_lufs,
                 auto_tag_metadata=command.auto_tag_metadata,
+                skip_non_music_sections=command.skip_non_music_sections,
+                trim_silence=command.trim_silence,
                 updated_at=utc_now(),
             )
             saved = uow.settings.update(updated_entity)

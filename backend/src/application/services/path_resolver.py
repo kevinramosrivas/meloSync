@@ -42,6 +42,8 @@ class TrackFileResolver:
 
         # 2. Extract target filename
         filename = Path(track.file_path).name if track.file_path else None
+        if not filename and track.url and track.url.startswith("local://"):
+            filename = track.url[len("local://"):].strip()
         if not filename and track.original_title:
             filename = f"{track.original_title}.mp3"
 
@@ -83,7 +85,8 @@ class TrackFileResolver:
             except Exception:
                 continue
 
-        # 5. Fuzzy / Case-insensitive match in active directories
+        # 5. Fuzzy / Case-insensitive match and stem match in active directories
+        stem_target = Path(filename).stem.lower() if filename else ""
         for directory in search_dirs:
             if not directory.exists() or not directory.is_dir():
                 continue
@@ -92,8 +95,8 @@ class TrackFileResolver:
                 for entry in directory.iterdir():
                     if not entry.is_file():
                         continue
-                    # Case-insensitive filename match
-                    if entry.name.lower() == filename.lower():
+                    # Case-insensitive filename or stem match
+                    if (filename and entry.name.lower() == filename.lower()) or (stem_target and entry.stem.lower() == stem_target):
                         return TrackFileResolver._auto_heal(track, entry, uow)
             except Exception as e:
                 logger.debug("Error iterating %s during track resolution: %s", directory, e)

@@ -109,6 +109,7 @@ class TrackResponse(BaseModel):
     progress_percent: float
     file_path: Optional[str] = None
     file_exists: bool = True
+    is_in_active_directory: bool = True
     error_message: Optional[str] = None
     metadata: Optional[TrackMetadataResponse] = None
     play_count: int = 0
@@ -117,13 +118,24 @@ class TrackResponse(BaseModel):
     updated_at_iso: str = ""
 
     @classmethod
-    def from_dto(cls, dto: Any) -> TrackResponse:
+    def from_dto(cls, dto: Any, active_dir: Optional[Path] = None) -> TrackResponse:
         file_exists = True
+        is_in_active_directory = True
+
         if dto.status == DownloadStatus.COMPLETADA:
-            try:
-                file_exists = bool(dto.file_path and Path(dto.file_path).is_file())
-            except Exception:
+            if dto.file_path:
+                try:
+                    p = Path(dto.file_path)
+                    file_exists = p.is_file()
+                    if active_dir and file_exists:
+                        p_res = p.resolve()
+                        is_in_active_directory = (p_res.parent == active_dir or p_res.is_relative_to(active_dir))
+                except Exception:
+                    file_exists = False
+                    is_in_active_directory = False
+            else:
                 file_exists = False
+                is_in_active_directory = False
 
         # Support both TrackDTO (created_at_iso) and domain Track (created_at datetime)
         created_at_val = getattr(dto, "created_at_iso", None)
@@ -156,6 +168,7 @@ class TrackResponse(BaseModel):
             progress_percent=dto.progress_percent,
             file_path=dto.file_path,
             file_exists=file_exists,
+            is_in_active_directory=is_in_active_directory,
             error_message=dto.error_message,
             metadata=TrackMetadataResponse.from_dto(dto.metadata),
             play_count=getattr(dto, "play_count", 0),
@@ -173,21 +186,40 @@ class SyncLibraryResponse(BaseModel):
     message: str
 
 
+class BatchDeleteTracksRequest(BaseModel):
+    track_ids: list[str] = Field(..., min_length=1)
+    delete_files: bool = True
+
+
+class BatchDeleteTracksResponse(BaseModel):
+    message: str
+    deleted_count: int
+    failed_ids: list[str] = []
+
+
+class BatchAddTracksRequest(BaseModel):
+    track_ids: list[str] = Field(..., min_length=1)
+
+
 # Settings Schemas
 class SettingsResponse(BaseModel):
     music_download_directory: str
     default_audio_quality: AudioQuality
     normalize_audio_lufs: float
     auto_tag_metadata: bool
-    backend_version: str = "2.0.0"
+    skip_non_music_sections: bool = True
+    trim_silence: bool = True
+    backend_version: str = "2.1.0"
 
     @classmethod
-    def from_dto(cls, dto: Any, backend_version: str = "2.0.0") -> SettingsResponse:
+    def from_dto(cls, dto: Any, backend_version: str = "2.1.0") -> SettingsResponse:
         return cls(
             music_download_directory=dto.music_download_directory,
             default_audio_quality=dto.default_audio_quality,
             normalize_audio_lufs=dto.normalize_audio_lufs,
             auto_tag_metadata=dto.auto_tag_metadata,
+            skip_non_music_sections=getattr(dto, "skip_non_music_sections", True),
+            trim_silence=getattr(dto, "trim_silence", True),
             backend_version=backend_version,
         )
 
@@ -197,3 +229,42 @@ class UpdateSettingsRequest(BaseModel):
     default_audio_quality: AudioQuality = AudioQuality.BEST
     normalize_audio_lufs: float = -14.0
     auto_tag_metadata: bool = True
+    skip_non_music_sections: bool = True
+    trim_silence: bool = True
+
+
+class StorageStatsResponse(BaseModel):
+    active_directory: str
+    active_dir_track_count: int
+    other_locations_track_count: int
+    missing_files_count: int
+    total_library_tracks: int
+    active_dir_size_bytes: int = 0
+    active_dir_size_formatted: str = ""
+
+
+class ConsolidateRequest(BaseModel):
+    target_directory: Optional[str] = None
+    move_files: bool = True
+
+
+class ConsolidateResponse(BaseModel):
+    moved_count: int
+    already_there_count: int
+    missing_count: int
+    total_tracks: int
+    target_directory: str
+    message: str
+
+
+# Backup Schemas
+from .backup_schemas import (
+    BackupPayloadSchema,
+    BackupPlaylistSchema,
+    BackupSettingsSchema,
+    BackupTrackMetadataSchema,
+    BackupTrackSchema,
+    ImportBackupOptionsRequest,
+    ImportBackupRequest,
+    ImportBackupResponse,
+)

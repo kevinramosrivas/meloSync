@@ -8,12 +8,14 @@ from .edit_metadata import (
     UpdateTrackMetadataUseCase,
 )
 from .manage_library import (
+    BatchDeleteTracksUseCase,
     DeleteTrackUseCase,
     GetLibraryTracksUseCase,
     GetTrackByIdUseCase,
 )
 from .manage_playlists import (
     AddTrackToPlaylistUseCase,
+    AddTracksBatchToPlaylistUseCase,
     CreatePlaylistUseCase,
     DeletePlaylistUseCase,
     GetPlaylistByIdUseCase,
@@ -23,6 +25,9 @@ from .manage_playlists import (
     RemoveTrackFromPlaylistUseCase,
     SyncSmartPlaylistsUseCase,
 )
+from .consolidate_library import ConsolidateLibraryUseCase, ConsolidateReportDTO
+from .export_data import ExportBackupUseCase
+from .import_data import ImportBackupUseCase
 from .manage_settings import (
     GetSettingsUseCase,
     UpdateSettingsUseCase,
@@ -32,16 +37,20 @@ from .sync_library import SyncLibraryUseCase, SyncReportDTO
 
 __all__ = [
     "AddTrackToPlaylistUseCase",
+    "ConsolidateLibraryUseCase",
+    "ConsolidateReportDTO",
     "CreatePlaylistUseCase",
     "DeletePlaylistUseCase",
     "DeleteTrackUseCase",
     "DownloadAndProcessTrackUseCase",
+    "ExportBackupUseCase",
     "GetLibraryTracksUseCase",
     "GetPlaylistByIdUseCase",
     "GetPlaylistsGroupedUseCase",
     "GetPlaylistsUseCase",
     "GetSettingsUseCase",
     "GetTrackByIdUseCase",
+    "ImportBackupUseCase",
     "RecordTrackPlayUseCase",
     "RemoveTrackFromPlaylistUseCase",
     "SearchMetadataCandidatesUseCase",

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import Any, Optional
 
 from ..domain.entities import (
     AppSettings,
@@ -141,6 +141,7 @@ class DownloadTrackCommand:
     channel_name: str = ""
     custom_output_dir: Optional[str] = None
     custom_quality: AudioQuality = AudioQuality.BEST
+    preferred_metadata: Optional[TrackMetadata] = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -164,6 +165,8 @@ class SettingsDTO:
     default_audio_quality: AudioQuality
     normalize_audio_lufs: float
     auto_tag_metadata: bool
+    skip_non_music_sections: bool = True
+    trim_silence: bool = True
 
     @classmethod
     def from_domain(cls, s: AppSettings) -> SettingsDTO:
@@ -172,6 +175,8 @@ class SettingsDTO:
             default_audio_quality=s.default_audio_quality,
             normalize_audio_lufs=s.normalize_audio_lufs,
             auto_tag_metadata=s.auto_tag_metadata,
+            skip_non_music_sections=s.skip_non_music_sections,
+            trim_silence=s.trim_silence,
         )
 
 
@@ -182,3 +187,92 @@ class UpdateSettingsCommand:
     default_audio_quality: AudioQuality = AudioQuality.BEST
     normalize_audio_lufs: float = -14.0
     auto_tag_metadata: bool = True
+    skip_non_music_sections: bool = True
+    trim_silence: bool = True
+
+
+# =========================================================================
+# Backup & Migration DTOs
+# =========================================================================
+
+@dataclass(slots=True, frozen=True)
+class BackupTrackMetadataDTO:
+    """Track metadata serialized for backup export/import."""
+    title: str
+    artist: str
+    album: str = "Unknown Album"
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    track_number: Optional[int] = None
+    disc_number: Optional[int] = None
+    cover_url: Optional[str] = None
+    lyrics: Optional[str] = None
+
+
+@dataclass(slots=True, frozen=True)
+class BackupTrackDTO:
+    """Single track representation in a backup file."""
+    youtube_id: str
+    url: str
+    original_title: str
+    duration_seconds: int = 0
+    channel_name: str = ""
+    metadata: Optional[BackupTrackMetadataDTO] = None
+    play_count: int = 0
+    last_played_at_iso: Optional[str] = None
+
+
+@dataclass(slots=True, frozen=True)
+class BackupPlaylistDTO:
+    """Playlist representation in a backup file with ordered track references."""
+    name: str
+    description: str = ""
+    cover_url: Optional[str] = None
+    track_youtube_ids: list[str] = field(default_factory=list)
+
+
+@dataclass(slots=True, frozen=True)
+class BackupSettingsDTO:
+    """Settings representation in a backup file."""
+    default_audio_quality: str
+    normalize_audio_lufs: float
+    auto_tag_metadata: bool
+    skip_non_music_sections: bool = True
+    trim_silence: bool = True
+    user_preferences: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True, frozen=True)
+class ExportBackupDTO:
+    """Full backup export bundle."""
+    format: str
+    version: int
+    exported_at_iso: str
+    app_version: str
+    settings: BackupSettingsDTO
+    tracks: list[BackupTrackDTO]
+    playlists: list[BackupPlaylistDTO]
+
+
+@dataclass(slots=True, frozen=True)
+class ImportBackupOptionsDTO:
+    """Configuration options for importing a backup."""
+    download_missing_audio: bool = True
+    restore_settings: bool = True
+    restore_preferences: bool = True
+    overwrite_existing_metadata: bool = False
+
+
+@dataclass(slots=True, frozen=True)
+class ImportBackupResultDTO:
+    """Result report summarizing the import operation."""
+    status: str
+    message: str
+    total_tracks_in_backup: int
+    tracks_imported: int
+    tracks_already_present: int
+    tracks_queued_for_download: int
+    playlists_imported: int
+    settings_restored: bool
+    user_preferences: dict[str, Any] = field(default_factory=dict)
+

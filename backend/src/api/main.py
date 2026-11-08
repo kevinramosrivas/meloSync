@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .dependencies import get_container
 from .routers import (
+    backup_router,
     downloads_router,
     library_router,
     metadata_router,
@@ -66,7 +67,7 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     """FastAPI application factory."""
-    backend_version = os.getenv("MELOSYNC_BACKEND_VERSION", os.getenv("BACKEND_VERSION", "2.0.0"))
+    backend_version = os.getenv("MELOSYNC_BACKEND_VERSION", os.getenv("BACKEND_VERSION", "2.1.0"))
 
     app = FastAPI(
         title="meloSync API 🎵",
@@ -100,6 +101,7 @@ def create_app() -> FastAPI:
     app.include_router(metadata_router, prefix=api_v1_prefix)
     app.include_router(playlists_router, prefix=api_v1_prefix)
     app.include_router(settings_router, prefix=api_v1_prefix)
+    app.include_router(backup_router, prefix=api_v1_prefix)
 
     # Mount WebSocket router
     app.include_router(ws_router)

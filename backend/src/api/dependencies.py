@@ -10,11 +10,14 @@ from .websockets.connection_manager import WebSocketConnectionManager
 from .websockets.events_router import ws_manager
 from .workers.task_executor import BackgroundDownloadExecutor
 from ..application.use_cases import (
+    ConsolidateLibraryUseCase,
     DeleteTrackUseCase,
     DownloadAndProcessTrackUseCase,
+    ExportBackupUseCase,
     GetLibraryTracksUseCase,
     GetSettingsUseCase,
     GetTrackByIdUseCase,
+    ImportBackupUseCase,
     SearchMetadataCandidatesUseCase,
     SearchYouTubeUseCase,
     SyncLibraryUseCase,
@@ -78,6 +81,10 @@ class Container:
     def get_delete_track_use_case(self) -> DeleteTrackUseCase:
         return DeleteTrackUseCase(uow_factory=self.uow_factory)
 
+    def get_batch_delete_tracks_use_case(self) -> BatchDeleteTracksUseCase:
+        from ..application.use_cases.manage_library import BatchDeleteTracksUseCase
+        return BatchDeleteTracksUseCase(uow_factory=self.uow_factory)
+
     def get_search_metadata_use_case(self) -> SearchMetadataCandidatesUseCase:
         return SearchMetadataCandidatesUseCase(metadata_provider=self.metadata_provider)
 
@@ -96,6 +103,15 @@ class Container:
 
     def get_sync_library_use_case(self) -> SyncLibraryUseCase:
         return SyncLibraryUseCase(uow_factory=self.uow_factory)
+
+    def get_consolidate_library_use_case(self) -> ConsolidateLibraryUseCase:
+        return ConsolidateLibraryUseCase(uow_factory=self.uow_factory)
+
+    def get_export_backup_use_case(self) -> ExportBackupUseCase:
+        return ExportBackupUseCase(uow_factory=self.uow_factory)
+
+    def get_import_backup_use_case(self) -> ImportBackupUseCase:
+        return ImportBackupUseCase(uow_factory=self.uow_factory)
 
     # Playlist use cases
     def get_create_playlist_use_case(self) -> CreatePlaylistUseCase:
@@ -125,6 +141,10 @@ class Container:
         from ..application.use_cases.manage_playlists import AddTrackToPlaylistUseCase
         return AddTrackToPlaylistUseCase(uow_factory=self.uow_factory)
 
+    def get_add_tracks_batch_to_playlist_use_case(self) -> AddTracksBatchToPlaylistUseCase:
+        from ..application.use_cases.manage_playlists import AddTracksBatchToPlaylistUseCase
+        return AddTracksBatchToPlaylistUseCase(uow_factory=self.uow_factory)
+
     def get_remove_track_from_playlist_use_case(self) -> RemoveTrackFromPlaylistUseCase:
         from ..application.use_cases.manage_playlists import RemoveTrackFromPlaylistUseCase
         return RemoveTrackFromPlaylistUseCase(uow_factory=self.uow_factory)
@@ -138,6 +158,7 @@ class Container:
         return SyncSmartPlaylistsUseCase(
             uow_factory=self.uow_factory,
             itunes_provider=self.metadata_provider,
+            event_publisher=self.ws_manager,
         )
 
 
