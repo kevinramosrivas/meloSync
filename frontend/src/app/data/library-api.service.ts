@@ -10,10 +10,13 @@ import { DownloadStatus, SyncReport, Track } from '../domain/models';
 export class LibraryApiService {
   private http = inject(HttpClient);
 
-  getLibrary(status?: DownloadStatus): Observable<Track[]> {
+  getLibrary(status?: DownloadStatus, location?: 'all' | 'active' | 'missing' | 'other'): Observable<Track[]> {
     let params = new HttpParams();
     if (status) {
       params = params.set('status', status);
+    }
+    if (location && location !== 'all') {
+      params = params.set('location', location);
     }
     return this.http.get<Track[]>(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.library}`, { params });
   }
@@ -27,6 +30,16 @@ export class LibraryApiService {
     return this.http.delete<{ message: string; track_id: string }>(
       `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.library}/${trackId}`,
       { params }
+    );
+  }
+
+  deleteTracksBatch(
+    trackIds: string[],
+    deleteFiles = true
+  ): Observable<{ message: string; deleted_count: number; failed_ids: string[] }> {
+    return this.http.post<{ message: string; deleted_count: number; failed_ids: string[] }>(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.library}/batch-delete`,
+      { track_ids: trackIds, delete_files: deleteFiles }
     );
   }
 

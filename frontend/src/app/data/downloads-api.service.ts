@@ -27,4 +27,23 @@ export class DownloadsApiService {
       {}
     );
   }
+
+  cancelDownload(trackId: string): Observable<{ message: string; track_id: string; status: string }> {
+    return this.http.post<{ message: string; track_id: string; status: string }>(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.downloads}/${trackId}/cancel`,
+      {}
+    );
+  }
+
+  deleteDownload(trackId: string): Observable<{ message: string; track_id: string }> {
+    return this.http.delete<{ message: string; track_id: string }>(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.downloads}/${trackId}`
+    );
+  }
+
+  clearFailedDownloads(): Observable<{ message: string; deleted_count: number }> {
+    return this.http.delete<{ message: string; deleted_count: number }>(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.downloads}`
+    );
+  }
 }

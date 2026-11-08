@@ -37,6 +37,7 @@ export interface Track {
   progress_percent: number;
   file_path?: string | null;
   file_exists?: boolean;
+  is_in_active_directory?: boolean;
   error_message?: string | null;
   metadata?: TrackMetadata | null;
   play_count?: number;

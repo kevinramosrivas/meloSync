@@ -233,6 +233,7 @@
                 (addToPlaylist)="openAddToPlaylist($event)"
                 (openFolder)="openFolder($event)"
                 (removeFromPlaylist)="removeTrack($event)"
+                (openMenu)="openTrackContextMenu($event.track, $event.event)"
               />
             }
           </div>

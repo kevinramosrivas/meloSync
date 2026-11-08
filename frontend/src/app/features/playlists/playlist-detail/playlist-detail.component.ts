@@ -12,6 +12,8 @@ import { EqualizerIndicatorComponent } from '../../../shared/components/equalize
 import { CreatePlaylistDialogComponent } from '../components/create-playlist-dialog/create-playlist-dialog.component';
 import { AddToPlaylistDialogComponent } from '../../library/components/add-to-playlist-dialog/add-to-playlist-dialog.component';
 import { TrackRowComponent } from '../../../shared/components/track-row/track-row.component';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
+import { ContextMenuService } from '../../../core/services/context-menu.service';
 
 @Component({
   selector: 'app-playlist-detail',
@@ -31,6 +33,8 @@ export class PlaylistDetailComponent implements OnInit {
   readonly player = inject(AudioPlayerService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
+  private readonly contextMenu = inject(ContextMenuService);
 
   readonly id = input.required<string>();
 
@@ -189,11 +193,19 @@ export class PlaylistDetailComponent implements OnInit {
     });
   }
 
-  deletePlaylist(): void {
+  async deletePlaylist(): Promise<void> {
     const p = this.playlist();
     if (!p || p.is_smart) return;
 
-    if (!confirm(`¿Deseas eliminar la lista "${p.name}" permanentemente?`)) return;
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Eliminar lista de reproducción',
+      message: `¿Deseas eliminar permanentemente la lista "${p.name}"? Los archivos de música seguirán estando disponibles en tu biblioteca.`,
+      confirmText: 'Eliminar Lista',
+      danger: true,
+      icon: 'trash',
+    });
+
+    if (!confirmed) return;
 
     this.playlistsApi.deletePlaylist(p.id).subscribe({
       next: () => {
@@ -204,6 +216,45 @@ export class PlaylistDetailComponent implements OnInit {
       error: () => {
         this.toast.error('Error', 'No se pudo eliminar la lista.');
       },
+    });
+  }
+
+  openTrackContextMenu(track: Track, event: MouseEvent): void {
+    const p = this.playlist();
+    const isCustom = p && !p.is_smart;
+
+    const items: any[] = [
+      {
+        label: 'Reproducir ahora',
+        icon: 'play',
+        action: () => this.playTrack(track),
+      },
+      {
+        label: 'Añadir a otra playlist...',
+        icon: 'list-music',
+        action: () => this.openAddToPlaylist({ track, event }),
+      },
+      {
+        label: 'Revelar en el explorador',
+        icon: 'folder',
+        action: () => this.openFolder(track.id),
+      },
+    ];
+
+    if (isCustom) {
+      items.push({ separator: true });
+      items.push({
+        label: 'Quitar de esta lista',
+        icon: 'trash',
+        danger: true,
+        action: () => this.removeTrack(track),
+      });
+    }
+
+    this.contextMenu.open({
+      x: event.clientX,
+      y: event.clientY,
+      items,
     });
   }
 

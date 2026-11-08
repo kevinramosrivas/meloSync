@@ -84,4 +84,24 @@ describe('TrackRowComponent', () => {
     component.onPlayAction();
     expect(mockPlayer.togglePlay).toHaveBeenCalled();
   });
+
+  it('should emit toggleSelect when clicked in selection mode', () => {
+    const selectSpy = vi.fn();
+    component.toggleSelect.subscribe(selectSpy);
+    fixture.componentRef.setInput('selectionMode', true);
+    fixture.detectChanges();
+
+    const mouseEvent = new MouseEvent('click');
+    component.onRowClick(mouseEvent);
+    expect(selectSpy).toHaveBeenCalledWith(sampleTrack);
+  });
+
+  it('should emit openMenu on contextmenu and options button click', () => {
+    const menuSpy = vi.fn();
+    component.openMenu.subscribe(menuSpy);
+
+    const mouseEvent = new MouseEvent('contextmenu');
+    component.onContextMenu(mouseEvent);
+    expect(menuSpy).toHaveBeenCalledWith({ track: sampleTrack, event: mouseEvent });
+  });
 });

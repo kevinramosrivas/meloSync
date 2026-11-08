@@ -52,6 +52,13 @@ export class PlaylistsApiService {
     );
   }
 
+  addTracksBatchToPlaylist(playlistId: string, trackIds: string[]): Observable<Playlist> {
+    return this.http.post<Playlist>(
+      `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.playlists}/${playlistId}/batch-tracks`,
+      { track_ids: trackIds }
+    );
+  }
+
   removeTrackFromPlaylist(playlistId: string, trackId: string): Observable<Playlist> {
     return this.http.delete<Playlist>(
       `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.playlistTrackDelete(playlistId, trackId)}`

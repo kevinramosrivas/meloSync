@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PlaylistsApiService } from '../../../../data/playlists-api.service';
 import { PlaylistsStore } from '../../../../core/stores/playlists.store';
@@ -10,7 +10,7 @@ import { IconComponent } from '../../../../shared/components/icon/icon.component
   selector: 'app-add-to-playlist-dialog',
   imports: [FormsModule, IconComponent],
   template: `
-    @if (isOpen() && track()) {
+    @if (isOpen() && selectedTracks().length > 0) {
       <div 
         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
         (click)="onBackdropClick($event)"
@@ -29,9 +29,15 @@ import { IconComponent } from '../../../../shared/components/icon/icon.component
                 <h2 class="text-base font-bold text-white tracking-tight truncate">
                   Añadir a Playlist
                 </h2>
-                <span class="text-xs text-zinc-400 truncate">
-                  {{ track()?.display_title }} • {{ track()?.display_artist }}
-                </span>
+                @if (selectedTracks().length === 1) {
+                  <span class="text-xs text-zinc-400 truncate">
+                    {{ selectedTracks()[0].display_title }} • {{ selectedTracks()[0].display_artist }}
+                  </span>
+                } @else {
+                  <span class="text-xs text-zinc-400 truncate font-medium">
+                    {{ selectedTracks().length }} canciones seleccionadas
+                  </span>
+                }
               </div>
             </div>
             <button
@@ -156,7 +162,15 @@ export class AddToPlaylistDialogComponent {
 
   readonly isOpen = input<boolean>(false);
   readonly track = input<Track | null>(null);
+  readonly tracks = input<Track[] | null>(null);
   readonly close = output<void>();
+
+  readonly selectedTracks = computed<Track[]>(() => {
+    const list = this.tracks();
+    if (list && list.length > 0) return list;
+    const single = this.track();
+    return single ? [single] : [];
+  });
 
   readonly userPlaylists = this.playlistsStore.userPlaylists;
   readonly isLoading = this.playlistsStore.isLoading;
@@ -175,40 +189,65 @@ export class AddToPlaylistDialogComponent {
   }
 
   addToPlaylist(playlist: PlaylistSummary): void {
-    const t = this.track();
-    if (!t) return;
+    const items = this.selectedTracks();
+    if (items.length === 0) return;
 
     this.isAdding.set(true);
-    this.playlistsApi.addTrackToPlaylist(playlist.id, t.id).subscribe({
-      next: () => {
-        this.isAdding.set(false);
-        this.playlistsStore.load(true);
-        this.toast.success(
-          'Canción añadida',
-          `"${t.display_title}" fue agregada a "${playlist.name}".`
-        );
-        this.onClose();
-      },
-      error: () => {
-        this.isAdding.set(false);
-        this.toast.error('No se pudo añadir', 'La canción ya podría estar en la lista o hubo un fallo de red.');
-      },
-    });
+
+    if (items.length === 1) {
+      const t = items[0];
+      this.playlistsApi.addTrackToPlaylist(playlist.id, t.id).subscribe({
+        next: () => {
+          this.isAdding.set(false);
+          this.playlistsStore.load(true);
+          this.toast.success(
+            'Canción añadida',
+            `"${t.display_title}" fue agregada a "${playlist.name}".`
+          );
+          this.onClose();
+        },
+        error: () => {
+          this.isAdding.set(false);
+          this.toast.error('No se pudo añadir', 'La canción ya podría estar en la lista o hubo un fallo de red.');
+        },
+      });
+    } else {
+      const trackIds = items.map(t => t.id);
+      this.playlistsApi.addTracksBatchToPlaylist(playlist.id, trackIds).subscribe({
+        next: () => {
+          this.isAdding.set(false);
+          this.playlistsStore.load(true);
+          this.toast.success(
+            'Canciones añadidas',
+            `Se añadieron ${items.length} canciones a "${playlist.name}".`
+          );
+          this.onClose();
+        },
+        error: () => {
+          this.isAdding.set(false);
+          this.toast.error('Error al añadir', 'No se pudieron añadir las canciones a la lista.');
+        },
+      });
+    }
   }
 
   onCreateAndAdd(): void {
     const name = this.newPlaylistName().trim();
-    const t = this.track();
-    if (!name || !t) return;
+    const items = this.selectedTracks();
+    if (!name || items.length === 0) return;
 
     this.isAdding.set(true);
     this.playlistsApi.createPlaylist({ name }).subscribe({
       next: (created) => {
-        this.playlistsApi.addTrackToPlaylist(created.id, t.id).subscribe({
+        const trackIds = items.map(t => t.id);
+        this.playlistsApi.addTracksBatchToPlaylist(created.id, trackIds).subscribe({
           next: () => {
             this.isAdding.set(false);
             this.playlistsStore.load(true);
-            this.toast.success('Lista creada', `"${t.display_title}" fue añadida a "${created.name}".`);
+            const msg = items.length === 1
+              ? `"${items[0].display_title}" fue añadida a "${created.name}".`
+              : `Se añadieron ${items.length} canciones a "${created.name}".`;
+            this.toast.success('Lista creada', msg);
             this.onClose();
           },
           error: () => {

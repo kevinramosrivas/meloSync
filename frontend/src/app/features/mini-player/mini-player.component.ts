@@ -1,8 +1,9 @@
-import { Component, OnInit, OnDestroy, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, computed, effect, inject, signal } from '@angular/core';
 import { IconComponent } from '../../shared/components/icon/icon.component';
 import { DurationPipe } from '../../shared/pipes/duration.pipe';
 import { MarqueeTextComponent } from '../../shared/components/marquee-text/marquee-text.component';
 import { MiniPlayerSyncService } from '../../core/services/mini-player-sync.service';
+import { TaskbarControlsService } from '../../core/services/taskbar-controls.service';
 
 @Component({
   selector: 'app-mini-player',
@@ -11,6 +12,7 @@ import { MiniPlayerSyncService } from '../../core/services/mini-player-sync.serv
 })
 export class MiniPlayerComponent implements OnInit, OnDestroy {
   readonly sync = inject(MiniPlayerSyncService);
+  private readonly taskbarControls = inject(TaskbarControlsService);
 
   readonly windowHeight = signal<number>(
     typeof window !== 'undefined' ? window.innerHeight : 320
@@ -22,6 +24,17 @@ export class MiniPlayerComponent implements OnInit, OnDestroy {
 
   readonly isPillMode = computed(() => this.windowHeight() < 140);
   readonly canShowPreviousInPill = computed(() => this.windowWidth() >= 290);
+
+  constructor() {
+    effect(() => {
+      const t = this.sync.track();
+      if (typeof document !== 'undefined') {
+        document.title = t
+          ? (t.display_artist ? `${t.display_title} • ${t.display_artist}` : t.display_title)
+          : 'meloSync Mini Player';
+      }
+    });
+  }
 
   private resizeListener = (): void => {
     if (typeof window !== 'undefined') {

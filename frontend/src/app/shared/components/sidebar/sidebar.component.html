@@ -29,44 +29,6 @@
 
     <!-- Clean Industry-Standard Navigation (Fixed Y-positions, Tactile Micro-Interactions) -->
     <nav class="flex flex-col gap-1 w-full">
-      <!-- Link: Buscar -->
-      <a routerLink="/search"
-        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white"
-        class="group relative flex items-center h-10 w-full rounded-xl text-[13.5px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer overflow-hidden"
-        [class.px-3]="!isCollapsed()" [class.justify-center]="isCollapsed()" title="Buscar">
-        <app-icon name="search" [size]="19"
-          class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
-        <span class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
-          [class.max-w-0]="isCollapsed()" [class.opacity-0]="isCollapsed()" [class.ml-0]="isCollapsed()"
-          [class.max-w-[140px]]="!isCollapsed()" [class.opacity-100]="!isCollapsed()" [class.ml-3]="!isCollapsed()">
-          Buscar
-        </span>
-      </a>
-
-      <!-- Link: Descargas -->
-      <a routerLink="/downloads"
-        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white"
-        class="group relative flex items-center h-10 w-full rounded-xl text-[13.5px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer overflow-hidden"
-        [class.px-3]="!isCollapsed()" [class.justify-center]="isCollapsed()" title="Descargas">
-        <app-icon name="download" [size]="19"
-          class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
-        <span class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
-          [class.max-w-0]="isCollapsed()" [class.opacity-0]="isCollapsed()" [class.ml-0]="isCollapsed()"
-          [class.max-w-[140px]]="!isCollapsed()" [class.opacity-100]="!isCollapsed()" [class.ml-3]="!isCollapsed()">
-          Descargas
-        </span>
-
-        @if (activeProgress()) {
-        <span
-          class="ml-auto overflow-hidden whitespace-nowrap transition-all duration-200 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-zinc-950 shadow-sm"
-          [class.hidden]="isCollapsed()">
-          1
-        </span>
-        <span class="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-white shadow-sm ring-2 ring-[#0c0c11]"
-          [class.hidden]="!isCollapsed()"></span>
-        }
-      </a>
-
       <!-- Link: Biblioteca -->
       <a routerLink="/library"
         routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white"
@@ -94,6 +56,47 @@
           Playlists
         </span>
       </a>
+
+      <!-- Link: Buscar -->
+      <a routerLink="/search"
+        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white"
+        class="group relative flex items-center h-10 w-full rounded-xl text-[13.5px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer overflow-hidden"
+        [class.px-3]="!isCollapsed()" [class.justify-center]="isCollapsed()" title="Buscar">
+        <app-icon name="search" [size]="19"
+          class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
+        <span class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          [class.max-w-0]="isCollapsed()" [class.opacity-0]="isCollapsed()" [class.ml-0]="isCollapsed()"
+          [class.max-w-[140px]]="!isCollapsed()" [class.opacity-100]="!isCollapsed()" [class.ml-3]="!isCollapsed()">
+          Buscar
+        </span>
+      </a>
+
+      <!-- Link: Descargas -->
+      <a routerLink="/downloads"
+        routerLinkActive="!bg-gradient-to-r !from-[#fa2d48] !to-[#ff385c] !text-white !font-semibold shadow-md shadow-[#fa2d48]/25 [&>.nav-icon]:!text-white"
+        class="group relative flex items-center h-10 w-full rounded-xl text-[13.5px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] cursor-pointer overflow-hidden"
+        [class.px-3]="!isCollapsed()" [class.justify-center]="isCollapsed()" title="Descargas">
+        <app-icon name="download" [size]="19"
+          class="nav-icon shrink-0 text-zinc-400 group-hover:text-white transition-colors" />
+        <span class="whitespace-nowrap overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          [class.max-w-0]="isCollapsed()" [class.opacity-0]="isCollapsed()" [class.ml-0]="isCollapsed()"
+          [class.max-w-[140px]]="!isCollapsed()" [class.opacity-100]="!isCollapsed()" [class.ml-3]="!isCollapsed()">
+          Descargas
+        </span>
+
+        @if (hasActiveDownloads()) {
+        <span
+          class="ml-auto overflow-hidden whitespace-nowrap transition-all duration-200 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-zinc-950 shadow-sm"
+          [class.hidden]="isCollapsed()">
+          {{ activeDownloadsCount() }}
+        </span>
+        <span class="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-white shadow-sm ring-2 ring-[#0c0c11]"
+          [class.hidden]="!isCollapsed()" aria-label="Descargas en curso"></span>
+        }
+      </a>
+
+
+
 
       <!-- Persistent Subtle Divider (Matches in both states) -->
       <div class="h-[1px] bg-white/[0.06] my-1.5 w-full"></div>

@@ -6,6 +6,7 @@ import { PlaylistsStore } from '../../core/stores/playlists.store';
 import { PlaylistSummary } from '../../domain/models';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { ToastService } from '../../core/services/toast.service';
+import { ConfirmDialogService } from '../../core/services/confirm-dialog.service';
 import { API_CONFIG } from '../../core/config/api.config';
 import { IconComponent } from '../../shared/components/icon/icon.component';
 import { EqualizerIndicatorComponent } from '../../shared/components/equalizer-indicator/equalizer-indicator.component';
@@ -24,6 +25,7 @@ export class PlaylistsComponent implements OnInit {
   readonly player = inject(AudioPlayerService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
 
   readonly userPlaylists = this.playlistsStore.userPlaylists;
   readonly forYouPlaylists = this.playlistsStore.forYouPlaylists;
@@ -162,10 +164,19 @@ export class PlaylistsComponent implements OnInit {
     }
   }
 
-  deletePlaylist(p: PlaylistSummary, event: Event): void {
+  async deletePlaylist(p: PlaylistSummary, event: Event): Promise<void> {
     event.stopPropagation();
     this.activeMenuId.set(null);
-    if (!confirm(`¿Estás seguro de que deseas eliminar la lista "${p.name}"?`)) return;
+
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Eliminar lista de reproducción',
+      message: `¿Estás seguro de que deseas eliminar permanentemente la lista "${p.name}"? Los archivos de música seguirán estando disponibles en tu biblioteca.`,
+      confirmText: 'Eliminar Lista',
+      danger: true,
+      icon: 'trash',
+    });
+
+    if (!confirmed) return;
 
     this.playlistsApi.deletePlaylist(p.id).subscribe({
       next: () => {

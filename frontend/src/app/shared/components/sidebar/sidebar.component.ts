@@ -1,7 +1,8 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { WebSocketService } from '../../../core/services/websocket.service';
 import { SettingsApiService } from '../../../data/settings-api.service';
+import { DownloadsApiService } from '../../../data/downloads-api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { USER_PREFERENCE_KEYS } from '../../../core/constants/preferences.constants';
@@ -22,14 +23,28 @@ import { IconComponent } from '../icon/icon.component';
 export class SidebarComponent implements OnInit {
   readonly ws = inject(WebSocketService);
   private readonly settingsApi = inject(SettingsApiService);
+  private readonly downloadsApi = inject(DownloadsApiService);
   private readonly toast = inject(ToastService);
   private readonly preferences = inject(UserPreferencesService);
 
-  readonly activeProgress = this.ws.latestProgress;
+  readonly hasActiveDownloads = this.ws.hasActiveDownloads;
+  readonly activeDownloadsCount = this.ws.activeDownloadsCount;
+  readonly activeProgress = computed(() => {
+    const p = this.ws.latestProgress();
+    return (p && p.status !== 'COMPLETADA' && p.status !== 'ERROR' && p.status !== 'CANCELADA') ? p : null;
+  });
   readonly isCollapsed = signal<boolean>(false);
 
   ngOnInit(): void {
     this.syncResponsiveState();
+    this.refreshActiveDownloads();
+  }
+
+  private refreshActiveDownloads(): void {
+    this.downloadsApi.getActiveDownloads().subscribe({
+      next: (tracks) => this.ws.syncActiveDownloads(tracks),
+      error: () => {}
+    });
   }
 
   onWindowResize(): void {

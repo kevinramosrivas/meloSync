@@ -4,10 +4,23 @@
       <h1 class="text-3xl font-extrabold tracking-tight text-white">Monitor de Descargas</h1>
       <p class="text-xs font-medium text-zinc-400 mt-1">Seguimiento en tiempo real de tus descargas</p>
     </div>
-    <button type="button" class="btn-secondary" (click)="loadActiveDownloads()">
-      <app-icon name="refresh" [size]="15" />
-      <span>Actualizar</span>
-    </button>
+    <div class="flex items-center gap-2">
+      @if (hasFailedOrCancelled()) {
+      <button
+        type="button"
+        class="btn-secondary text-xs text-red-400 hover:text-red-300 hover:border-red-500/30"
+        (click)="clearFailed()"
+        title="Limpiar todas las descargas fallidas y canceladas"
+      >
+        <app-icon name="trash" [size]="14" />
+        <span>Limpiar fallidas</span>
+      </button>
+      }
+      <button type="button" class="btn-secondary" (click)="loadActiveDownloads()">
+        <app-icon name="refresh" [size]="15" />
+        <span>Actualizar</span>
+      </button>
+    </div>
   </header>
 
   <main class="w-full">
@@ -47,6 +60,8 @@
               <span>Consultando iTunes y agregando carátula HD...</span>
               } @else if (track.status === 'COMPLETADA') {
               <span class="text-emerald-400 font-semibold">¡Procesamiento completado con éxito!</span>
+              } @else if (track.status === 'CANCELADA') {
+              <span class="text-zinc-400 font-medium italic">Descarga cancelada por el usuario</span>
               } @else if (track.status === 'ERROR') {
               <span class="text-red-400 font-semibold">{{ track.error_message || 'Error en el procesamiento' }}</span>
               } @else {
@@ -58,14 +73,58 @@
           </div>
         </div>
 
-        @if (track.status === 'ERROR') {
-        <div class="flex justify-end pt-1 border-t border-white/[0.06]">
-          <button type="button" class="btn-primary text-xs py-1.5" (click)="retry(track.id)">
+        <!-- Action buttons -->
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-white/[0.06]">
+          @if (isActive(track)) {
+          <button
+            type="button"
+            class="btn-secondary text-xs py-1.5 px-3 text-amber-300 hover:text-amber-200 hover:border-amber-500/30"
+            (click)="cancel(track)"
+            title="Detener descarga actual"
+          >
+            <app-icon name="x" [size]="14" />
+            <span>Cancelar</span>
+          </button>
+          <button
+            type="button"
+            class="btn-secondary text-xs py-1.5 px-3 text-red-400 hover:text-red-300 hover:border-red-500/30"
+            (click)="removeDownload(track)"
+            title="Cancelar y eliminar de la cola"
+          >
+            <app-icon name="trash" [size]="14" />
+            <span>Eliminar</span>
+          </button>
+          } @else if (track.status === 'ERROR' || track.status === 'CANCELADA') {
+          <button
+            type="button"
+            class="btn-secondary text-xs py-1.5 px-3 text-red-400 hover:text-red-300 hover:border-red-500/30"
+            (click)="removeDownload(track)"
+            title="Eliminar de la lista"
+          >
+            <app-icon name="trash" [size]="14" />
+            <span>Eliminar</span>
+          </button>
+          <button
+            type="button"
+            class="btn-primary text-xs py-1.5 px-3"
+            (click)="retry(track.id)"
+            title="Volver a intentar descarga"
+          >
             <app-icon name="refresh" [size]="14" />
             <span>Reintentar</span>
           </button>
+          } @else if (track.status === 'COMPLETADA') {
+          <button
+            type="button"
+            class="btn-secondary text-xs py-1.5 px-3 text-zinc-400 hover:text-white"
+            (click)="removeDownload(track)"
+            title="Quitar de la lista de descargas"
+          >
+            <app-icon name="trash" [size]="14" />
+            <span>Quitar</span>
+          </button>
+          }
         </div>
-        }
       </div>
       }
     </div>

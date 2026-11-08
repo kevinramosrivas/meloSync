@@ -5,62 +5,83 @@
       <h1 class="text-3xl font-extrabold tracking-tight text-white">Tu Biblioteca</h1>
       <p class="text-xs font-medium text-zinc-400 mt-1">
         @if (isInitialLoading() || (isLoading() && tracks().length === 0)) {
-          Sincronizando con tu música...
+        Sincronizando con tu música...
         } @else if (searchQuery()) {
-          {{ filteredTracks().length }} de {{ tracks().length }} canciones encontradas
+        {{ filteredTracks().length }} de {{ tracks().length }} canciones encontradas
         } @else {
-          {{ tracks().length }} canciones descargadas
+        {{ tracks().length }} canciones descargadas
         }
       </p>
     </div>
 
     <!-- Primary Playback Actions (Prominent Pill Buttons) -->
     @if (filteredTracks().length > 0) {
-      <div class="flex items-center gap-3">
-        <button
-          type="button"
-          class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#fa2d48] to-[#ff4760] text-white text-xs font-bold shadow-lg shadow-[#fa2d48]/25 hover:shadow-[#fa2d48]/40 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
-          (click)="playAll(false)"
-          title="Reproducir lista completa en orden"
-        >
-          <app-icon name="play" [size]="15" />
-          <span>Reproducir todo</span>
-        </button>
+    <div class="flex items-center gap-3">
+      <button type="button"
+        class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#fa2d48] to-[#ff4760] text-white text-xs font-bold shadow-lg shadow-[#fa2d48]/25 hover:shadow-[#fa2d48]/40 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+        (click)="playAll(false)" title="Reproducir lista completa en orden">
+        <app-icon name="play" [size]="15" />
+        <span>Reproducir todo</span>
+      </button>
 
-        <button
-          type="button"
-          class="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-semibold border border-white/[0.1] active:scale-95 transition-all cursor-pointer"
-          (click)="playAll(true)"
-          title="Reproducir lista completa en modo aleatorio"
-        >
-          <app-icon name="shuffle" [size]="15" />
-          <span>Aleatorio</span>
-        </button>
-      </div>
+      <button type="button"
+        class="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-semibold border border-white/[0.1] active:scale-95 transition-all cursor-pointer"
+        (click)="playAll(true)" title="Reproducir lista completa en modo aleatorio">
+        <app-icon name="shuffle" [size]="15" />
+        <span>Aleatorio</span>
+      </button>
+    </div>
     }
   </header>
 
   <!-- Level 2: Control Toolbar (Search Form on Left, View Switcher & Sync Tools on Right) -->
   <div class="flex items-center justify-between flex-wrap gap-3.5 w-full pt-1 pb-1">
     <!-- Left: Universal Search Input (Formulario de Búsqueda) -->
-    <div class="flex items-center gap-2.5 rounded-xl border border-white/[0.08] bg-[#14141c]/90 px-3.5 py-2 focus-within:border-[#fa2d48] focus-within:bg-[#181824] transition-all w-full sm:w-[300px] md:w-[360px] shadow-sm">
+    <div
+      class="flex items-center gap-2.5 rounded-xl border border-white/[0.08] bg-[#14141c]/90 px-3.5 py-2 focus-within:border-[#fa2d48] focus-within:bg-[#181824] transition-all w-full sm:w-[300px] md:w-[360px] shadow-sm">
       <app-icon name="search" [size]="16" class="text-zinc-400 shrink-0" />
-      <input 
-        type="text" 
-        [ngModel]="searchQuery()" 
-        (ngModelChange)="searchQuery.set($event)" 
-        placeholder="Buscar por título, artista, álbum o género..." 
-        class="flex-1 bg-transparent text-xs text-white outline-none placeholder:text-zinc-500 font-sans min-w-0"
-      />
+      <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)"
+        placeholder="Buscar por título, artista, álbum o género..."
+        class="flex-1 bg-transparent text-xs text-white outline-none placeholder:text-zinc-500 font-sans min-w-0" />
       @if (searchQuery()) {
-        <button 
-          class="flex items-center justify-center p-0.5 text-zinc-400 hover:text-white transition-colors cursor-pointer shrink-0" 
-          type="button" 
-          (click)="searchQuery.set('')" 
-          title="Limpiar búsqueda"
-        >
-          <app-icon name="x" [size]="14" />
-        </button>
+      <button
+        class="flex items-center justify-center p-0.5 text-zinc-400 hover:text-white transition-colors cursor-pointer shrink-0"
+        type="button" (click)="searchQuery.set('')" title="Limpiar búsqueda">
+        <app-icon name="x" [size]="14" />
+      </button>
+      }
+    </div>
+
+    <!-- Location Filter Segmented Control -->
+    <div class="flex items-center rounded-xl bg-white/[0.05] p-1 border border-white/[0.08] shadow-sm text-xs">
+      <button type="button"
+        class="flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition-all duration-200 cursor-pointer"
+        [class.bg-white/[0.15]]="locationFilter() === 'all'" [class.text-white]="locationFilter() === 'all'"
+        [class.text-zinc-400]="locationFilter() !== 'all'" [class.hover:text-white]="locationFilter() !== 'all'"
+        (click)="setLocationFilter('all')" title="Mostrar todas las canciones de la biblioteca">
+        <span>Todas</span>
+        <span class="text-[10px] opacity-75">({{ tracks().length }})</span>
+      </button>
+
+      <button type="button"
+        class="flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition-all duration-200 cursor-pointer"
+        [class.bg-white/[0.15]]="locationFilter() === 'active'" [class.text-white]="locationFilter() === 'active'"
+        [class.text-zinc-400]="locationFilter() !== 'active'" [class.hover:text-white]="locationFilter() !== 'active'"
+        (click)="setLocationFilter('active')" title="Mostrar solo las canciones almacenadas en la carpeta activa">
+        <span>En carpeta</span>
+        <span class="text-[10px] opacity-75">({{ activeDirCount() }})</span>
+      </button>
+
+      @if (missingCount() > 0) {
+      <button type="button"
+        class="flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition-all duration-200 cursor-pointer text-red-400 hover:text-red-300"
+        [class.bg-red-500/20]="locationFilter() === 'missing'" [class.text-red-300]="locationFilter() === 'missing'"
+        [class.border]="locationFilter() === 'missing'" [class.border-red-500/30]="locationFilter() === 'missing'"
+        (click)="setLocationFilter('missing')" title="Mostrar pistas con archivo no encontrado en disco">
+        <app-icon name="alert-circle" [size]="12" />
+        <span>No encontradas</span>
+        <span class="text-[10px] font-bold">({{ missingCount() }})</span>
+      </button>
       }
     </div>
 
@@ -68,32 +89,22 @@
     <div class="flex items-center gap-2.5">
       <!-- Segmented View Mode Switcher -->
       <div class="flex items-center rounded-xl bg-white/[0.05] p-1 border border-white/[0.08] shadow-sm">
-        <button
-          type="button"
+        <button type="button"
           class="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 ease-out active:scale-95 cursor-pointer"
-          [class.bg-white/[0.15]]="viewMode() === viewModes.LIST"
-          [class.text-white]="viewMode() === viewModes.LIST"
-          [class.shadow-sm]="viewMode() === viewModes.LIST"
-          [class.text-zinc-400]="viewMode() !== viewModes.LIST"
-          [class.hover:text-white]="viewMode() !== viewModes.LIST"
-          (click)="setViewMode(viewModes.LIST)"
-          title="Vista de lista detallada"
-        >
+          [class.bg-white/[0.15]]="viewMode() === viewModes.LIST" [class.text-white]="viewMode() === viewModes.LIST"
+          [class.shadow-sm]="viewMode() === viewModes.LIST" [class.text-zinc-400]="viewMode() !== viewModes.LIST"
+          [class.hover:text-white]="viewMode() !== viewModes.LIST" (click)="setViewMode(viewModes.LIST)"
+          title="Vista de lista detallada">
           <app-icon name="list" [size]="14" />
           <span class="hidden md:inline">Lista</span>
         </button>
 
-        <button
-          type="button"
+        <button type="button"
           class="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 ease-out active:scale-95 cursor-pointer"
-          [class.bg-white/[0.15]]="viewMode() === viewModes.GRID"
-          [class.text-white]="viewMode() === viewModes.GRID"
-          [class.shadow-sm]="viewMode() === viewModes.GRID"
-          [class.text-zinc-400]="viewMode() !== viewModes.GRID"
-          [class.hover:text-white]="viewMode() !== viewModes.GRID"
-          (click)="setViewMode(viewModes.GRID)"
-          title="Vista de cuadrícula (Cards)"
-        >
+          [class.bg-white/[0.15]]="viewMode() === viewModes.GRID" [class.text-white]="viewMode() === viewModes.GRID"
+          [class.shadow-sm]="viewMode() === viewModes.GRID" [class.text-zinc-400]="viewMode() !== viewModes.GRID"
+          [class.hover:text-white]="viewMode() !== viewModes.GRID" (click)="setViewMode(viewModes.GRID)"
+          title="Vista de cuadrícula (Cards)">
           <app-icon name="grid" [size]="14" />
           <span class="hidden md:inline">Tarjetas</span>
         </button>
@@ -101,26 +112,21 @@
 
       <div class="h-5 w-[1px] bg-white/[0.1] hidden sm:block"></div>
 
+
+
       <!-- Sync Library Folder Action -->
-      <button
-        type="button"
+      <button type="button"
         class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-white/[0.08] bg-white/[0.05] hover:bg-white/[0.1] text-xs font-medium text-white transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-        (click)="syncLibrary()"
-        [disabled]="isSyncing()"
-        title="Escanear y reconciliar archivos en la carpeta de música"
-      >
+        (click)="syncLibrary()" [disabled]="isSyncing()"
+        title="Escanear y reconciliar archivos en la carpeta de música">
         <app-icon [name]="isSyncing() ? 'refresh' : 'folder'" [size]="15" [class.animate-spin]="isSyncing()" />
         <span>{{ isSyncing() ? 'Sincronizando...' : 'Sincronizar' }}</span>
       </button>
 
       <!-- Quick Reload List Action (Compact icon button with tooltip) -->
-      <button
-        type="button"
+      <button type="button"
         class="flex h-8 w-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300 hover:text-white transition-all cursor-pointer disabled:opacity-50"
-        (click)="loadLibrary()"
-        [disabled]="isLoading()"
-        title="Actualizar lista"
-      >
+        (click)="loadLibrary()" [disabled]="isLoading()" title="Actualizar lista">
         <app-icon name="refresh" [size]="15" [class.animate-spin]="isLoading()" />
       </button>
     </div>
@@ -129,124 +135,15 @@
   <!-- Main Content: Loading, Empty, or Track Views -->
   <main class="w-full">
     @if (isInitialLoading() || (isLoading() && tracks().length === 0)) {
-      <!-- Premium Apple Music Style Skeleton Shimmer -->
-      <div class="flex flex-col gap-6 w-full animate-fade-in">
-        @if (viewMode() === viewModes.LIST) {
-          <!-- List Skeleton Table -->
-          <div class="flex flex-col w-full rounded-2xl bg-[#14141c]/70 border border-white/[0.07] overflow-hidden shadow-xl backdrop-blur-sm animate-pulse">
-            <!-- Header skeleton -->
-            <div class="track-list-grid gap-2 sm:gap-4 px-3 sm:px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 border-b border-white/[0.08] select-none bg-white/[0.02]">
-              <div class="flex items-center justify-center font-mono">#</div>
-              <div>Título</div>
-              <div class="hidden md:block">Álbum</div>
-              <div class="hidden xl:block">Género / Año</div>
-              <div class="flex items-center justify-end" title="Duración">
-                <app-icon name="clock" [size]="14" />
-              </div>
-              <div class="text-right">Acciones</div>
-            </div>
-
-            <!-- Rows skeleton -->
-            <div class="flex flex-col divide-y divide-white/[0.03]">
-              @for (item of [1, 2, 3, 4, 5, 6, 7]; track item) {
-                <div class="track-list-grid gap-2 sm:gap-4 px-3 sm:px-4 py-2.5 items-center">
-                  <div class="flex items-center justify-center">
-                    <div class="h-3 w-3 bg-white/[0.06] rounded"></div>
-                  </div>
-                  <div class="flex items-center gap-3 min-w-0">
-                    <div class="h-10 w-10 shrink-0 bg-white/[0.08] rounded-xl"></div>
-                    <div class="flex flex-col gap-1.5 flex-1 min-w-0">
-                      <div class="h-3.5 bg-white/[0.08] rounded w-3/4 max-w-[220px]"></div>
-                      <div class="h-2.5 bg-white/[0.04] rounded w-1/2 max-w-[140px]"></div>
-                    </div>
-                  </div>
-                  <div class="hidden md:block">
-                    <div class="h-3 bg-white/[0.06] rounded w-2/3 max-w-[170px]"></div>
-                  </div>
-                  <div class="hidden xl:block">
-                    <div class="h-3 bg-white/[0.04] rounded w-1/2 max-w-[110px]"></div>
-                  </div>
-                  <div class="flex items-center justify-end">
-                    <div class="h-3 bg-white/[0.06] rounded w-9"></div>
-                  </div>
-                  <div class="flex items-center justify-end gap-1.5">
-                    <div class="h-7 w-7 rounded-lg bg-white/[0.04]"></div>
-                    <div class="h-7 w-7 rounded-lg bg-white/[0.04]"></div>
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
-        } @else {
-          <!-- Grid Skeleton Cards -->
-          <div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5 w-full animate-pulse">
-            @for (item of [1, 2, 3, 4, 5, 6, 7, 8]; track item) {
-              <div class="flex flex-col gap-3 p-3.5 rounded-2xl bg-[#14141c]/80 border border-white/[0.07]">
-                <div class="aspect-square w-full rounded-xl bg-white/[0.08]"></div>
-                <div class="flex flex-col gap-2 mt-1">
-                  <div class="h-3.5 bg-white/[0.08] rounded w-4/5"></div>
-                  <div class="h-2.5 bg-white/[0.04] rounded w-1/2"></div>
-                </div>
-              </div>
-            }
-          </div>
-        }
-
-        <!-- Contextual status beneath skeleton -->
-        <div class="flex items-center justify-center gap-2.5 py-3 text-zinc-400">
-          <div class="w-3.5 h-3.5 rounded-full border-2 border-white/20 border-t-[#fa2d48] animate-spin"></div>
-          <span class="text-xs font-medium tracking-wide text-zinc-400">Cargando tu biblioteca...</span>
-        </div>
-      </div>
-    } @else if (connectionFailed()) {
-      <div class="flex flex-col items-center justify-center py-28 gap-4 text-center text-zinc-400 animate-fade-in">
-        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.05] border border-white/[0.08] text-amber-400/90 shadow-lg shadow-black/40">
-          <app-icon name="refresh" [size]="28" />
-        </div>
-        <h3 class="text-lg font-bold text-white">No se pudo conectar con el motor local</h3>
-        <p class="text-xs text-zinc-400 max-w-md leading-relaxed">
-          meloSync está esperando que el servicio de audio responda. Si acabas de abrir la aplicación, puede tomar unos segundos en iniciar.
-        </p>
-        <button
-          type="button"
-          class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#fa2d48] to-[#ff4760] text-white text-xs font-bold shadow-lg shadow-[#fa2d48]/25 hover:shadow-[#fa2d48]/40 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer mt-2"
-          (click)="loadLibrary(0)"
-        >
-          <app-icon name="refresh" [size]="14" />
-          <span>Reintentar conexión</span>
-        </button>
-      </div>
-    } @else if (tracks().length === 0) {
-      <div class="flex flex-col items-center justify-center py-32 gap-4 text-center text-zinc-400">
-        <div class="text-zinc-600">
-          <app-icon name="music" [size]="48" />
-        </div>
-        <h3 class="text-lg font-bold text-white">No hay canciones en tu biblioteca</h3>
-        <p class="text-xs text-zinc-500 max-w-sm">Descarga tus canciones preferidas desde la pestaña de Búsqueda.</p>
-      </div>
-    } @else if (filteredTracks().length === 0) {
-      <div class="flex flex-col items-center justify-center py-32 gap-4 text-center text-zinc-400">
-        <div class="text-zinc-600">
-          <app-icon name="search" [size]="44" />
-        </div>
-        <h3 class="text-base font-bold text-white">No se encontraron resultados para "{{ searchQuery() }}"</h3>
-        <p class="text-xs text-zinc-500 max-w-sm">Prueba buscando por nombre de artista, álbum, género, año o con otra palabra clave.</p>
-        <button
-          type="button"
-          class="btn-secondary mt-2"
-          (click)="searchQuery.set('')"
-        >
-          <span>Limpiar filtro</span>
-        </button>
-      </div>
-    } @else {
-      <!-- 1. Track List View (Prioritized, always mounted, toggled via .hidden) -->
-      <div 
-        class="flex flex-col w-full rounded-2xl bg-[#14141c]/70 border border-white/[0.07] overflow-hidden shadow-xl backdrop-blur-sm animate-view-fade"
-        [class.hidden]="viewMode() !== viewModes.LIST"
-      >
-        <!-- Table Header -->
-        <div class="track-list-grid gap-2 sm:gap-4 px-3 sm:px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-400 border-b border-white/[0.08] select-none bg-white/[0.02]">
+    <!-- Premium Apple Music Style Skeleton Shimmer -->
+    <div class="flex flex-col gap-6 w-full animate-fade-in">
+      @if (viewMode() === viewModes.LIST) {
+      <!-- List Skeleton Table -->
+      <div
+        class="flex flex-col w-full rounded-2xl bg-[#14141c]/70 border border-white/[0.07] overflow-hidden shadow-xl backdrop-blur-sm animate-pulse">
+        <!-- Header skeleton -->
+        <div
+          class="track-list-grid gap-2 sm:gap-4 px-3 sm:px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 border-b border-white/[0.08] select-none bg-white/[0.02]">
           <div class="flex items-center justify-center font-mono">#</div>
           <div>Título</div>
           <div class="hidden md:block">Álbum</div>
@@ -257,140 +154,298 @@
           <div class="text-right">Acciones</div>
         </div>
 
-        <!-- Table Body / Rows -->
+        <!-- Rows skeleton -->
         <div class="flex flex-col divide-y divide-white/[0.03]">
-          @for (track of filteredTracks(); track track.id; let i = $index) {
-            <app-track-row
-              [track]="track"
-              [index]="i"
-              context="library"
-              (play)="togglePlayTrack($event)"
-              (addToPlaylist)="openAddToPlaylist($event.track, $event.event)"
-              (editMetadata)="openMetadataDialog($event)"
-              (openFolder)="openFolder($event)"
-              (delete)="deleteTrack($event)"
-            />
+          @for (item of [1, 2, 3, 4, 5, 6, 7]; track item) {
+          <div class="track-list-grid gap-2 sm:gap-4 px-3 sm:px-4 py-2.5 items-center">
+            <div class="flex items-center justify-center">
+              <div class="h-3 w-3 bg-white/[0.06] rounded"></div>
+            </div>
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="h-10 w-10 shrink-0 bg-white/[0.08] rounded-xl"></div>
+              <div class="flex flex-col gap-1.5 flex-1 min-w-0">
+                <div class="h-3.5 bg-white/[0.08] rounded w-3/4 max-w-[220px]"></div>
+                <div class="h-2.5 bg-white/[0.04] rounded w-1/2 max-w-[140px]"></div>
+              </div>
+            </div>
+            <div class="hidden md:block">
+              <div class="h-3 bg-white/[0.06] rounded w-2/3 max-w-[170px]"></div>
+            </div>
+            <div class="hidden xl:block">
+              <div class="h-3 bg-white/[0.04] rounded w-1/2 max-w-[110px]"></div>
+            </div>
+            <div class="flex items-center justify-end">
+              <div class="h-3 bg-white/[0.06] rounded w-9"></div>
+            </div>
+            <div class="flex items-center justify-end gap-1.5">
+              <div class="h-7 w-7 rounded-lg bg-white/[0.04]"></div>
+              <div class="h-7 w-7 rounded-lg bg-white/[0.04]"></div>
+            </div>
+          </div>
           }
         </div>
       </div>
+      } @else {
+      <!-- Grid Skeleton Cards -->
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5 w-full animate-pulse">
+        @for (item of [1, 2, 3, 4, 5, 6, 7, 8]; track item) {
+        <div class="flex flex-col gap-3 p-3.5 rounded-2xl bg-[#14141c]/80 border border-white/[0.07]">
+          <div class="aspect-square w-full rounded-xl bg-white/[0.08]"></div>
+          <div class="flex flex-col gap-2 mt-1">
+            <div class="h-3.5 bg-white/[0.08] rounded w-4/5"></div>
+            <div class="h-2.5 bg-white/[0.04] rounded w-1/2"></div>
+          </div>
+        </div>
+        }
+      </div>
+      }
 
-      <!-- 2. Track Cards Grid (Lazy rendered on demand, toggled via .hidden) -->
-      @if (hasRenderedCards()) {
-        <div 
-          class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5 w-full animate-view-fade"
-          [class.hidden]="viewMode() !== viewModes.GRID"
-        >
-          @for (track of filteredTracks(); track track.id) {
-            <div 
-              class="group relative flex flex-col gap-3 p-3.5 rounded-2xl bg-[#14141c]/80 hover:bg-[#1a1a24] border border-white/[0.07] hover:border-white/[0.18] shadow-md shadow-black/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer"
-              [class.!border-[#fa2d48]]="player.currentTrack()?.id === track.id && player.isPlaying()"
-              [class.!bg-[#fa2d48]/[0.08]]="player.currentTrack()?.id === track.id && player.isPlaying()"
-              [class.opacity-60]="track.file_exists === false"
-              (dblclick)="play(track)">
+      <!-- Contextual status beneath skeleton -->
+      <div class="flex items-center justify-center gap-2.5 py-3 text-zinc-400">
+        <div class="w-3.5 h-3.5 rounded-full border-2 border-white/20 border-t-[#fa2d48] animate-spin"></div>
+        <span class="text-xs font-medium tracking-wide text-zinc-400">Cargando tu biblioteca...</span>
+      </div>
+    </div>
+    } @else if (connectionFailed()) {
+    <div class="flex flex-col items-center justify-center py-28 gap-4 text-center text-zinc-400 animate-fade-in">
+      <div
+        class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.05] border border-white/[0.08] text-amber-400/90 shadow-lg shadow-black/40">
+        <app-icon name="refresh" [size]="28" />
+      </div>
+      <h3 class="text-lg font-bold text-white">No se pudo conectar con el motor local</h3>
+      <p class="text-xs text-zinc-400 max-w-md leading-relaxed">
+        meloSync está esperando que el servicio de audio responda. Si acabas de abrir la aplicación, puede tomar unos
+        segundos en iniciar.
+      </p>
+      <button type="button"
+        class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#fa2d48] to-[#ff4760] text-white text-xs font-bold shadow-lg shadow-[#fa2d48]/25 hover:shadow-[#fa2d48]/40 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer mt-2"
+        (click)="loadLibrary(0)">
+        <app-icon name="refresh" [size]="14" />
+        <span>Reintentar conexión</span>
+      </button>
+    </div>
+    } @else if (tracks().length === 0) {
+    <div class="flex flex-col items-center justify-center py-32 gap-4 text-center text-zinc-400">
+      <div class="text-zinc-600">
+        <app-icon name="music" [size]="48" />
+      </div>
+      <h3 class="text-lg font-bold text-white">No hay canciones en tu biblioteca</h3>
+      <p class="text-xs text-zinc-500 max-w-sm">Descarga tus canciones preferidas desde la pestaña de Búsqueda.</p>
+    </div>
+    } @else if (filteredTracks().length === 0) {
+    <div class="flex flex-col items-center justify-center py-32 gap-4 text-center text-zinc-400">
+      <div class="text-zinc-600">
+        <app-icon name="search" [size]="44" />
+      </div>
+      <h3 class="text-base font-bold text-white">No se encontraron resultados para "{{ searchQuery() }}"</h3>
+      <p class="text-xs text-zinc-500 max-w-sm">Prueba buscando por nombre de artista, álbum, género, año o con otra
+        palabra clave.</p>
+      <button type="button" class="btn-secondary mt-2" (click)="searchQuery.set('')">
+        <span>Limpiar filtro</span>
+      </button>
+    </div>
+    } @else {
+    <!-- 1. Track List View (Prioritized, always mounted, toggled via .hidden) -->
+    <div
+      class="flex flex-col w-full rounded-2xl bg-[#14141c]/70 border border-white/[0.07] overflow-hidden shadow-xl backdrop-blur-sm animate-view-fade"
+      [class.hidden]="viewMode() !== viewModes.LIST">
+      <!-- Table Header -->
+      <div
+        class="track-list-grid gap-2 sm:gap-4 px-3 sm:px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-400 border-b border-white/[0.08] select-none bg-white/[0.02]">
+        <div class="flex items-center justify-center font-mono">#</div>
+        <div>Título</div>
+        <div class="hidden md:block">Álbum</div>
+        <div class="hidden xl:block">Género / Año</div>
+        <div class="flex items-center justify-end" title="Duración">
+          <app-icon name="clock" [size]="14" />
+        </div>
+        <div class="text-right">Acciones</div>
+      </div>
 
-              <!-- Cover Image Box -->
-              <div class="relative aspect-square w-full rounded-xl overflow-hidden bg-[#181822] border border-white/[0.06] shadow-md">
-                @if (track.file_exists === false) {
-                  <span class="absolute top-2.5 right-2.5 rounded-md bg-red-600/90 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-white z-10 shadow-sm" title="Archivo físico no encontrado en disco">No encontrado</span>
-                }
+      <!-- Table Body / Rows -->
+      <div class="flex flex-col divide-y divide-white/[0.03]">
+        @for (track of filteredTracks(); track track.id; let i = $index) {
+        <app-track-row [track]="track" [index]="i" context="library" [selectionMode]="isSelectionMode()"
+          [isSelected]="selectedTrackIds().has(track.id)" (toggleSelect)="toggleTrackSelection($event)"
+          (openMenu)="openTrackContextMenu($event.track, $event.event)" (play)="togglePlayTrack($event)"
+          (addToPlaylist)="openAddToPlaylist($event.track, $event.event)" (editMetadata)="openMetadataDialog($event)"
+          (openFolder)="openFolder($event)" (delete)="deleteTrack($event)" />
+        }
+      </div>
+    </div>
 
-                @if (player.currentTrack()?.id === track.id) {
-                  <!-- Equalizer badge on currently playing track cover -->
-                  <div class="absolute top-2.5 left-2.5 z-10 flex items-center justify-center p-1.5 rounded-lg bg-black/75 backdrop-blur-md border border-white/10 shadow-md">
-                    <app-equalizer-indicator [isPlaying]="player.isPlaying()" [size]="14" />
-                  </div>
-                }
+    <!-- 2. Track Cards Grid (Lazy rendered on demand, toggled via .hidden) -->
+    @if (hasRenderedCards()) {
+    <div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5 w-full animate-view-fade"
+      [class.hidden]="viewMode() !== viewModes.GRID">
+      @for (track of filteredTracks(); track track.id) {
+      <div
+        class="group relative flex flex-col gap-3 p-3.5 rounded-2xl bg-[#14141c]/80 hover:bg-[#1a1a24] border border-white/[0.07] hover:border-white/[0.18] shadow-md shadow-black/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer"
+        [class.!border-[#fa2d48]]="(player.currentTrack()?.id === track.id && player.isPlaying()) || selectedTrackIds().has(track.id)"
+        [class.!bg-[#fa2d48]/[0.08]]="(player.currentTrack()?.id === track.id && player.isPlaying()) || selectedTrackIds().has(track.id)"
+        [class.opacity-60]="track.file_exists === false"
+        (click)="isSelectionMode() ? toggleTrackSelection(track) : togglePlayTrack(track)" (dblclick)="play(track)"
+        (contextmenu)="openTrackContextMenu(track, $event)">
 
-                @if (track | coverUrl; as coverUrl) {
-                  <img [src]="coverUrl" [alt]="track.display_title" class="block h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" decoding="async" />
-                } @else {
-                  <div class="flex h-full w-full items-center justify-center text-zinc-600 bg-[#181822]">
-                    <app-icon name="music" [size]="36" />
-                  </div>
-                }
+        <!-- Cover Image Box -->
+        <div
+          class="relative aspect-square w-full rounded-xl overflow-hidden bg-[#181822] border border-white/[0.06] shadow-md">
+          <!-- Checkbox badge in Selection Mode -->
+          @if (isSelectionMode()) {
+          <button type="button"
+            class="absolute top-2.5 left-2.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border shadow-md transition-all cursor-pointer"
+            [class.bg-[#fa2d48]]="selectedTrackIds().has(track.id)"
+            [class.border-[#fa2d48]]="selectedTrackIds().has(track.id)"
+            [class.text-white]="selectedTrackIds().has(track.id)"
+            [class.border-white/40]="!selectedTrackIds().has(track.id)"
+            [class.bg-black/60]="!selectedTrackIds().has(track.id)" [class.backdrop-blur-md]="true"
+            (click)="toggleTrackSelection(track); $event.stopPropagation()" title="Seleccionar">
+            @if (selectedTrackIds().has(track.id)) {
+            <app-icon name="check" [size]="14" />
+            }
+          </button>
+          }
 
-                <!-- Hover Play Overlay -->
-                <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity" (click)="togglePlayTrack(track); $event.stopPropagation()">
-                  <button class="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-tr from-[#fa2d48] to-[#ff4760] text-white shadow-xl shadow-[#fa2d48]/50 hover:scale-110 active:scale-95 transition-all cursor-pointer" type="button">
-                    <app-icon [name]="player.currentTrack()?.id === track.id && player.isPlaying() ? 'pause' : 'play'" [size]="22" />
-                  </button>
-                </div>
-              </div>
+          @if (track.file_exists === false) {
+          <span
+            class="absolute top-2.5 right-2.5 rounded-md bg-red-600/90 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-white z-10 shadow-sm"
+            title="Archivo físico no encontrado en disco">No encontrado</span>
+          }
 
-              <!-- Info -->
-              <div class="flex flex-col min-w-0 gap-0.5 px-0.5">
-                <h3 
-                  class="text-sm font-bold truncate leading-snug"
-                  [class.text-white]="player.currentTrack()?.id !== track.id"
-                  [class.text-[#fa2d48]]="player.currentTrack()?.id === track.id"
-                  [title]="track.display_title"
-                >
-                  {{ track.display_title }}
-                </h3>
-                <p class="text-xs text-zinc-400 truncate mt-0.5" [title]="track.display_artist">{{ track.display_artist }}</p>
-                <p class="text-[11px] text-zinc-500 truncate" [title]="track.display_album">{{ track.display_album }}</p>
-              </div>
+          @if (player.currentTrack()?.id === track.id) {
+          <!-- Equalizer badge on currently playing track cover -->
+          <div
+            class="absolute top-2.5 left-2.5 z-10 flex items-center justify-center p-1.5 rounded-lg bg-black/75 backdrop-blur-md border border-white/10 shadow-md">
+            <app-equalizer-indicator [isPlaying]="player.isPlaying()" [size]="14" />
+          </div>
+          }
 
-              <!-- Footer / Actions -->
-              <div class="flex items-center justify-between pt-2.5 border-t border-white/[0.06] px-0.5 mt-auto">
-                <span class="text-xs font-semibold text-zinc-400 tabular-nums">{{ track.duration_seconds | duration }}</span>
+          @if (track | coverUrl; as coverUrl) {
+          <img [src]="coverUrl" [alt]="track.display_title"
+            class="block h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy" decoding="async" />
+          } @else {
+          <div class="flex h-full w-full items-center justify-center text-zinc-600 bg-[#181822]">
+            <app-icon name="music" [size]="36" />
+          </div>
+          }
 
-                <div class="flex items-center gap-1">
-                  <button
-                    type="button"
-                    class="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
-                    (click)="openAddToPlaylist(track, $event)"
-                    title="Añadir a playlist..."
-                  >
-                    <app-icon name="list-music" [size]="14" />
-                  </button>
-                  <button
-                    type="button"
-                    class="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
-                    (click)="openMetadataDialog(track); $event.stopPropagation()"
-                    title="Editar metadatos / carátula"
-                  >
-                    <app-icon name="pencil" [size]="14" />
-                  </button>
-                  <button
-                    type="button"
-                    class="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
-                    (click)="openFolder(track.id); $event.stopPropagation()"
-                    title="Revelar en explorador"
-                  >
-                    <app-icon name="folder" [size]="14" />
-                  </button>
-                  <button
-                    type="button"
-                    class="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:!text-red-400 hover:!bg-red-500/10 transition-colors cursor-pointer"
-                    (click)="deleteTrack(track); $event.stopPropagation()"
-                    title="Eliminar pista"
-                  >
-                    <app-icon name="trash" [size]="14" />
-                  </button>
-                </div>
-              </div>
-            </div>
+          <!-- Hover Play Overlay (when not in selection mode) -->
+          @if (!isSelectionMode()) {
+          <div
+            class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+            (click)="togglePlayTrack(track); $event.stopPropagation()">
+            <button
+              class="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-tr from-[#fa2d48] to-[#ff4760] text-white shadow-xl shadow-[#fa2d48]/50 hover:scale-110 active:scale-95 transition-all cursor-pointer"
+              type="button">
+              <app-icon [name]="player.currentTrack()?.id === track.id && player.isPlaying() ? 'pause' : 'play'"
+                [size]="22" />
+            </button>
+          </div>
           }
         </div>
+
+        <!-- Info -->
+        <div class="flex flex-col min-w-0 gap-0.5 px-0.5">
+          <h3 class="text-sm font-bold truncate leading-snug"
+            [class.text-white]="player.currentTrack()?.id !== track.id"
+            [class.text-[#fa2d48]]="player.currentTrack()?.id === track.id" [title]="track.display_title">
+            {{ track.display_title }}
+          </h3>
+          <p class="text-xs text-zinc-400 truncate mt-0.5" [title]="track.display_artist">{{ track.display_artist }}</p>
+          <p class="text-[11px] text-zinc-500 truncate" [title]="track.display_album">{{ track.display_album }}</p>
+        </div>
+
+        <!-- Footer / Actions -->
+        <div class="flex items-center justify-between pt-2.5 border-t border-white/[0.06] px-0.5 mt-auto">
+          <span class="text-xs font-semibold text-zinc-400 tabular-nums">{{ track.duration_seconds | duration }}</span>
+
+          <div class="flex items-center gap-1">
+            <button type="button"
+              class="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
+              (click)="openAddToPlaylist(track, $event)" title="Añadir a playlist...">
+              <app-icon name="list-music" [size]="14" />
+            </button>
+            <button type="button"
+              class="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
+              (click)="openTrackContextMenu(track, $event); $event.stopPropagation()" title="Más opciones...">
+              <app-icon name="more-horizontal" [size]="15" />
+            </button>
+          </div>
+        </div>
+      </div>
       }
+    </div>
+    }
     }
   </main>
 </div>
 
+<!-- ========================================== -->
+<!-- BARRA FLOTANTE DE ACCIONES POR LOTE        -->
+<!-- ========================================== -->
+@if (isSelectionMode() && selectedTrackIds().size > 0) {
+<div
+  class="fixed bottom-[110px] -translate-x-1/2 z-40 animate-fade-in select-none pointer-events-none transition-[left] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+  [style.left]="dockLeftOffset()">
+  <div
+    class="pointer-events-auto flex items-center gap-2.5 sm:gap-3 p-1.5 pl-3.5 pr-2 rounded-full bg-[#15151c]/95 border border-white/10 backdrop-blur-2xl shadow-[0_16px_40px_rgba(0,0,0,0.7)] ring-1 ring-white/5">
+    <!-- Left: Counter & Select All -->
+    <div class="flex items-center gap-2 shrink-0">
+      <span
+        class="flex items-center justify-center px-2 py-0.5 rounded-full bg-[#fa2d48]/15 text-[#fa2d48] border border-[#fa2d48]/25 text-xs font-bold tabular-nums shrink-0">
+        {{ selectedTrackIds().size }}
+      </span>
+      <span class="text-xs text-zinc-300 font-medium whitespace-nowrap shrink-0">
+        {{ selectedTrackIds().size === 1 ? 'seleccionada' : 'seleccionadas' }}
+      </span>
+
+      <button type="button"
+        class="text-xs text-zinc-400 hover:text-white hover:bg-white/[0.08] px-2.5 py-1 rounded-full transition-colors cursor-pointer whitespace-nowrap font-medium shrink-0"
+        (click)="toggleSelectAll()"
+        [title]="isAllSelected() ? 'Deseleccionar todas las canciones visibles' : 'Seleccionar todas las canciones visibles'">
+        {{ isAllSelected() ? 'Deseleccionar' : 'Todas' }}
+      </button>
+    </div>
+
+    <!-- Subtle Vertical Separator -->
+    <div class="h-4 w-px bg-white/10 shrink-0 mx-0.5"></div>
+
+    <!-- Right: Action Buttons -->
+    <div class="flex items-center gap-2 shrink-0">
+      <!-- Add batch to playlist -->
+      <button type="button"
+        class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-zinc-200 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 transition-all cursor-pointer whitespace-nowrap active:scale-95 shadow-sm shrink-0"
+        (click)="openBatchAddToPlaylist()" title="Añadir canciones seleccionadas a una playlist">
+        <app-icon name="list-music" [size]="14" class="text-zinc-300 shrink-0" />
+        <span class="whitespace-nowrap">Añadir a lista</span>
+      </button>
+
+      <!-- Delete batch (MeloSync Destructive Button Pattern: refined ruby glass) -->
+      <button type="button"
+        class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-rose-300 hover:text-white bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 hover:border-rose-500/50 transition-all cursor-pointer active:scale-95 whitespace-nowrap shadow-sm shrink-0"
+        (click)="deleteSelectedTracks()" title="Eliminar canciones seleccionadas de la biblioteca">
+        <app-icon name="trash" [size]="14" class="text-rose-400 shrink-0" />
+        <span class="whitespace-nowrap">Eliminar</span>
+      </button>
+
+      <!-- Close / Exit Selection Mode -->
+      <button type="button"
+        class="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+        (click)="clearSelection()" title="Salir del modo de selección">
+        <app-icon name="x" [size]="14" />
+      </button>
+    </div>
+  </div>
+</div>
+}
+
 <!-- Metadata Edit Modal -->
 @if (selectedTrackForEdit()) {
-  <app-metadata-dialog 
-    [track]="selectedTrackForEdit()!" 
-    (close)="selectedTrackForEdit.set(null)"
-    (updated)="onTrackMetadataUpdated($event)"
-  />
+<app-metadata-dialog [track]="selectedTrackForEdit()!" (close)="selectedTrackForEdit.set(null)"
+  (updated)="onTrackMetadataUpdated($event)" />
 }
 
 <!-- Add to Playlist Modal -->
-<app-add-to-playlist-dialog
-  [isOpen]="isAddToPlaylistOpen()"
-  [track]="selectedTrackForPlaylist()"
-  (close)="isAddToPlaylistOpen.set(false)"
-/>
-
+<app-add-to-playlist-dialog [isOpen]="isAddToPlaylistOpen()" [track]="selectedTrackForPlaylist()"
+  [tracks]="selectedTracksList()" (close)="isAddToPlaylistOpen.set(false)" />

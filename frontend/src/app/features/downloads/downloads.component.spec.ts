@@ -6,6 +6,7 @@ import { DownloadsComponent } from './downloads.component';
 import { DownloadsApiService } from '../../data/downloads-api.service';
 import { WebSocketService } from '../../core/services/websocket.service';
 import { ToastService } from '../../core/services/toast.service';
+import { ConfirmDialogService } from '../../core/services/confirm-dialog.service';
 import { Track, DownloadProgress } from '../../domain/models';
 
 describe('DownloadsComponent', () => {
@@ -30,12 +31,17 @@ describe('DownloadsComponent', () => {
   let downloadsApiMock: {
     getActiveDownloads: ReturnType<typeof vi.fn>;
     retryDownload: ReturnType<typeof vi.fn>;
+    cancelDownload: ReturnType<typeof vi.fn>;
+    deleteDownload: ReturnType<typeof vi.fn>;
+    clearFailedDownloads: ReturnType<typeof vi.fn>;
   };
 
   let wsMock: {
     isConnected: ReturnType<typeof signal>;
     latestProgress: ReturnType<typeof signal>;
     latestCompletedTrack: ReturnType<typeof signal>;
+    syncActiveDownloads: ReturnType<typeof vi.fn>;
+    removeActiveDownload: ReturnType<typeof vi.fn>;
   };
 
   let toastMock: {
@@ -43,21 +49,34 @@ describe('DownloadsComponent', () => {
     error: ReturnType<typeof vi.fn>;
   };
 
+  let confirmDialogMock: {
+    confirm: ReturnType<typeof vi.fn>;
+  };
+
   beforeEach(async () => {
     downloadsApiMock = {
       getActiveDownloads: vi.fn().mockReturnValue(of([mockActiveTrack])),
       retryDownload: vi.fn().mockReturnValue(of({ message: 'Retrying', track_id: 'track-123' })),
+      cancelDownload: vi.fn().mockReturnValue(of({ message: 'Cancelled', track_id: 'track-123', status: 'CANCELADA' })),
+      deleteDownload: vi.fn().mockReturnValue(of({ message: 'Deleted', track_id: 'track-123' })),
+      clearFailedDownloads: vi.fn().mockReturnValue(of({ message: 'Cleared', deleted_count: 2 })),
     };
 
     wsMock = {
       isConnected: signal<boolean>(true),
       latestProgress: signal<DownloadProgress | null>(null),
       latestCompletedTrack: signal<Track | null>(null),
+      syncActiveDownloads: vi.fn(),
+      removeActiveDownload: vi.fn(),
     };
 
     toastMock = {
       info: vi.fn(),
       error: vi.fn(),
+    };
+
+    confirmDialogMock = {
+      confirm: vi.fn().mockResolvedValue(true),
     };
 
     await TestBed.configureTestingModule({
@@ -66,6 +85,7 @@ describe('DownloadsComponent', () => {
         { provide: DownloadsApiService, useValue: downloadsApiMock },
         { provide: WebSocketService, useValue: wsMock },
         { provide: ToastService, useValue: toastMock },
+        { provide: ConfirmDialogService, useValue: confirmDialogMock },
       ],
     }).compileComponents();
 
@@ -130,6 +150,43 @@ describe('DownloadsComponent', () => {
 
     expect(component.tracks()[0].status).toBe('COMPLETADA');
     expect(component.tracks()[0].progress_percent).toBe(100.0);
+  });
+
+  it('should correctly identify active tracks', () => {
+    expect(component.isActive(mockActiveTrack)).toBe(true);
+    const errorTrack: Track = { ...mockActiveTrack, status: 'ERROR' };
+    expect(component.isActive(errorTrack)).toBe(false);
+    const cancelledTrack: Track = { ...mockActiveTrack, status: 'CANCELADA' };
+    expect(component.isActive(cancelledTrack)).toBe(false);
+  });
+
+  it('should cancel active download and update status to CANCELADA', () => {
+    component.cancel(mockActiveTrack);
+    expect(downloadsApiMock.cancelDownload).toHaveBeenCalledWith('track-123');
+    expect(toastMock.info).toHaveBeenCalledWith('Descarga cancelada');
+    expect(component.tracks()[0].status).toBe('CANCELADA');
+    expect(wsMock.removeActiveDownload).toHaveBeenCalledWith('track-123');
+  });
+
+  it('should remove download and filter track out of the list', () => {
+    component.removeDownload(mockActiveTrack);
+    expect(downloadsApiMock.deleteDownload).toHaveBeenCalledWith('track-123');
+    expect(toastMock.info).toHaveBeenCalledWith('Descarga eliminada');
+    expect(component.tracks().length).toBe(0);
+    expect(wsMock.removeActiveDownload).toHaveBeenCalledWith('track-123');
+  });
+
+  it('should clear failed and cancelled tracks when clearFailed is called', async () => {
+    component.tracks.set([
+      { ...mockActiveTrack, id: 'err-1', status: 'ERROR' },
+      { ...mockActiveTrack, id: 'canc-1', status: 'CANCELADA' },
+    ]);
+    expect(component.hasFailedOrCancelled()).toBe(true);
+
+    await component.clearFailed();
+    expect(confirmDialogMock.confirm).toHaveBeenCalled();
+    expect(downloadsApiMock.clearFailedDownloads).toHaveBeenCalled();
+    expect(toastMock.info).toHaveBeenCalled();
   });
 });
 

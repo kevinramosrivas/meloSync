@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MiniPlayerComponent } from './mini-player.component';
 import { MiniPlayerSyncService } from '../../core/services/mini-player-sync.service';
+import { TaskbarControlsService } from '../../core/services/taskbar-controls.service';
 import { signal } from '@angular/core';
 
 describe('MiniPlayerComponent', () => {
@@ -47,7 +48,8 @@ describe('MiniPlayerComponent', () => {
     await TestBed.configureTestingModule({
       imports: [MiniPlayerComponent],
       providers: [
-        { provide: MiniPlayerSyncService, useValue: mockSyncService }
+        { provide: MiniPlayerSyncService, useValue: mockSyncService },
+        { provide: TaskbarControlsService, useValue: { initListeners: vi.fn(), isPlatformSupported: signal(false) } }
       ]
     }).compileComponents();
 
