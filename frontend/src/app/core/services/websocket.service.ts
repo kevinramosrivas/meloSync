@@ -1,4 +1,4 @@
-import { Injectable, signal, OnDestroy, inject } from '@angular/core';
+import { Injectable, signal, computed, OnDestroy, inject } from '@angular/core';
 import { filter, take } from 'rxjs';
 import { API_CONFIG } from '../config/api.config';
 import { BackendGateService } from './backend-gate.service';
@@ -21,6 +21,9 @@ export class WebSocketService implements OnDestroy {
   readonly latestProgress = signal<DownloadProgress | null>(null);
   readonly latestCompletedTrack = signal<Track | null>(null);
   readonly libraryUpdated = signal<number>(Date.now());
+  readonly activeDownloads = signal<Map<string, DownloadProgress>>(new Map());
+  readonly activeDownloadsCount = computed(() => this.activeDownloads().size);
+  readonly hasActiveDownloads = computed(() => this.activeDownloadsCount() > 0);
 
   constructor() {
     this.backendGate.ready$
@@ -79,18 +82,96 @@ export class WebSocketService implements OnDestroy {
 
   private handleEvent(event: WebSocketEvent): void {
     switch (event.event) {
-      case 'download_progress':
-        this.latestProgress.set(event.data as DownloadProgress);
+      case 'download_progress': {
+        const progress = event.data as DownloadProgress;
+        const isTerminal = progress.status === 'COMPLETADA' || progress.status === 'ERROR' || progress.status === 'CANCELADA';
+
+        if (isTerminal) {
+          const current = this.latestProgress();
+          if (current && (current.track_id === progress.track_id || current.youtube_id === progress.youtube_id)) {
+            this.latestProgress.set(null);
+          }
+        } else {
+          this.latestProgress.set(progress);
+        }
+
+        this.activeDownloads.update(map => {
+          const key = progress.youtube_id || progress.track_id;
+          if (!key) return map;
+          const newMap = new Map(map);
+          if (isTerminal) {
+            newMap.delete(key);
+          } else {
+            newMap.set(key, progress);
+          }
+          return newMap;
+        });
         break;
-      case 'download_completed':
+      }
+      case 'download_completed': {
         if (event.data?.track) {
-          this.latestCompletedTrack.set(event.data.track);
+          const track = event.data.track;
+          this.latestCompletedTrack.set(track);
+          const key = track.youtube_id || track.id;
+          this.activeDownloads.update(map => {
+            if (key && map.has(key)) {
+              const newMap = new Map(map);
+              newMap.delete(key);
+              return newMap;
+            }
+            return map;
+          });
+          const current = this.latestProgress();
+          if (current && (current.youtube_id === track.youtube_id || current.track_id === track.id)) {
+            this.latestProgress.set(null);
+          }
         }
         this.libraryUpdated.set(Date.now());
         break;
+      }
       case 'library_updated':
         this.libraryUpdated.set(Date.now());
         break;
+    }
+  }
+
+  syncActiveDownloads(tracks: Track[]): void {
+    const activeMap = new Map<string, DownloadProgress>();
+    for (const t of tracks) {
+      if (t.status !== 'COMPLETADA' && t.status !== 'ERROR' && t.status !== 'CANCELADA') {
+        const key = t.youtube_id || t.id;
+        if (key) {
+          activeMap.set(key, {
+            track_id: t.id,
+            youtube_id: t.youtube_id,
+            status: t.status,
+            progress_percent: t.progress_percent,
+            stage_description: t.original_title,
+          });
+        }
+      }
+    }
+    this.activeDownloads.set(activeMap);
+    if (activeMap.size === 0) {
+      this.latestProgress.set(null);
+    }
+  }
+
+  removeActiveDownload(identifier: string): void {
+    this.activeDownloads.update(map => {
+      let changed = false;
+      const newMap = new Map(map);
+      for (const [key, val] of map.entries()) {
+        if (key === identifier || val.track_id === identifier || val.youtube_id === identifier) {
+          newMap.delete(key);
+          changed = true;
+        }
+      }
+      return changed ? newMap : map;
+    });
+    const current = this.latestProgress();
+    if (current && (current.track_id === identifier || current.youtube_id === identifier)) {
+      this.latestProgress.set(null);
     }
   }
 

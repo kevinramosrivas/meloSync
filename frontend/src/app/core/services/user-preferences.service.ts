@@ -14,6 +14,7 @@ export interface UserPreferences {
   sidebarCollapsed: boolean;
   repeatMode: RepeatMode;
   shuffleEnabled: boolean;
+  taskbarControlsEnabled?: boolean;
 }
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
@@ -21,7 +22,8 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   defaultSearchProximityThreshold: 0.3,
   sidebarCollapsed: false,
   repeatMode: REPEAT_MODES.ALL,
-  shuffleEnabled: false
+  shuffleEnabled: false,
+  taskbarControlsEnabled: true
 };
 
 @Service()
@@ -33,6 +35,7 @@ export class UserPreferencesService {
   readonly sidebarCollapsed = computed(() => this._preferences().sidebarCollapsed);
   readonly repeatMode = computed(() => this._preferences().repeatMode);
   readonly shuffleEnabled = computed(() => this._preferences().shuffleEnabled);
+  readonly taskbarControlsEnabled = computed(() => this._preferences().taskbarControlsEnabled ?? true);
 
   constructor() {
     if (typeof window !== 'undefined') {

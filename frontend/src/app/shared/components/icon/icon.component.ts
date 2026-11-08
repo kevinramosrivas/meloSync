@@ -15,6 +15,7 @@ export type IconName =
   | 'refresh'
   | 'music'
   | 'download'
+  | 'upload'
   | 'settings'
   | 'library'
   | 'x'
@@ -39,7 +40,10 @@ export type IconName =
   | 'chevron-up'
   | 'list-music'
   | 'pip'
-  | 'user';
+  | 'user'
+  | 'more-horizontal'
+  | 'check-square'
+  | 'square';
 
 @Component({
   selector: 'app-icon',
@@ -121,6 +125,11 @@ export type IconName =
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
           <polyline points="7 10 12 15 17 10" />
           <line x1="12" y1="15" x2="12" y2="3" />
+        }
+        @case ('upload') {
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
         }
         @case ('settings') {
           <circle cx="12" cy="12" r="3" />
@@ -245,6 +254,18 @@ export type IconName =
         @case ('user') {
           <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
+        }
+        @case ('more-horizontal') {
+          <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+          <circle cx="19" cy="12" r="1.5" fill="currentColor" />
+          <circle cx="5" cy="12" r="1.5" fill="currentColor" />
+        }
+        @case ('check-square') {
+          <polyline points="9 11 12 14 22 4" />
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+        }
+        @case ('square') {
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
         }
       }
     </svg>

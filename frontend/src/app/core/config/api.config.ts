@@ -35,6 +35,9 @@ class ApiConfigManager {
     playlistTracks: (id: string) => `/api/v1/playlists/${id}/tracks`,
     playlistTrackDelete: (playlistId: string, trackId: string) => `/api/v1/playlists/${playlistId}/tracks/${trackId}`,
     playlistsSync: '/api/v1/playlists/sync-smart',
+    backup: '/api/v1/backup',
+    backupExport: '/api/v1/backup/export',
+    backupImport: '/api/v1/backup/import',
   };
 }
 

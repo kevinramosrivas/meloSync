@@ -5,6 +5,9 @@ import { TuiRoot } from '@taiga-ui/core';
 import { SidebarComponent } from './shared/components/sidebar/sidebar.component';
 import { BottomPlayerComponent } from './shared/components/bottom-player/bottom-player.component';
 import { ToastContainerComponent } from './shared/components/toast-container/toast-container.component';
+import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog.component';
+import { ContextMenuComponent } from './shared/components/context-menu/context-menu.component';
+import { TaskbarControlsService } from './core/services/taskbar-controls.service';
 
 @Component({
   selector: 'app-root',
@@ -13,12 +16,15 @@ import { ToastContainerComponent } from './shared/components/toast-container/toa
     TuiRoot,
     SidebarComponent,
     BottomPlayerComponent,
-    ToastContainerComponent
+    ToastContainerComponent,
+    ConfirmDialogComponent,
+    ContextMenuComponent,
   ],
   templateUrl: './app.html'
 })
 export class App {
   private readonly router = inject(Router);
+  private readonly taskbarControls = inject(TaskbarControlsService);
 
   readonly currentUrl = signal<string>(
     typeof window !== 'undefined' ? (window.location.pathname + window.location.hash) : ''
